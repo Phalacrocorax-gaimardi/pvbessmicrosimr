@@ -3,7 +3,7 @@
 #' @format A data frame with 8 rows and 2 variables:
 #' \describe{
 #'   \item{\code{azimuth}}{character compass point}
-#'   \item{\code{potential}}{double in hours}
+#'   \item{\code{potential}}{double hours}
 #'}
-#' @details PVWATTs at Birr
+#' @details based on PVWATTs data at Birr
 "solar_potentials"

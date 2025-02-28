@@ -86,7 +86,7 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
   #solar panel efficiency
   kWpm2 <- params$kWp_per_m2
 
-  #empirical_u <- empirical_utils_oo %>% dplyr::filter(calibration==1) %>% dplyr::select(-calibration)
+  empirical_u <- empirical_utils_oo %>% dplyr::filter(calibration==1) %>% dplyr::select(-calibration)
 
   du_social <- dplyr::filter(empirical_u,question_code=="q45")$du_average
   theta <- dplyr::filter(empirical_u,question_code=="theta")$du_average
@@ -102,16 +102,10 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
 
   get_sys_optimal <- function(b_s){
 
-    b_s1 <- b_s %>% rowwise() %>% mutate(result = list(pvbess_optim_complex(aspect,round(area_1*params$kWp_per_m2),round(area_2*params$kWp_per_m2),
-                                 shading1,shading2,D_max,D_min,params,tariff_plan="night_saver"))) %>% unnest_wider(result)
 
-    for(i in 1:nrow(b_s)){
+    b_s1 <- b_s %>% dplyr::rowwise() %>% dplyr::mutate(result = list(pvbess_optim_complex(aspect,round(area_1*params$kWp_per_m2),round(area_2*params$kWp_per_m2),
+                                 shading1,shading2,D_max,D_min,params,tariff_plan="night_saver"))) %>% tidyr::unnest_wider(result)
 
-      solar_constraint_1 <- round(b_s[i,] %>% pull(area_1)*params$kWp_per_m2)
-      solar_constraint_2 <- round(b_s[i,] %>% pull(area_2)*params$kWp_per_m2)
-      pvbess_optim_complex()
-
-    }
 
   }
 
@@ -201,5 +195,29 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
   }
 }
 
+#agents_init <- initialise_agents(sD,2010,cal_run=1) #cal run is irrelevant here
+
+
+get_financial_scale <- function(agents_in,cal_run){
+
+  gen_optimised_pvbess <- function(agents_in,n_sample=nrow(pv_survey_oo),tariff_plan="night_saver",no_grant = FALSE){
+
+    survey_time <- 2024
+    params <- scenario_params(sD,yeartime)
+    if(no_grant) params$grant_removal_date <- yeartime -1 #remove grant
+    #empirical_u <- empirical_utils_oo %>% dplyr::filter(calibration==cal_run)
+    agents_in <- agents_in %>% dplyr::slice_sample(n=n_sample) %>% dplyr::rowwise() %>% dplyr::mutate(result = list(pvbess_optim_complex(aspect,round(area_1*params$kWp_per_m2),round(area_2*params$kWp_per_m2),shading1,shading2,D_max,D_min,params,tariff_plan=tariff_plan))) %>% tidyr::unnest_wider(result)
+    agents_in %>% dplyr::select(ID,q14,q15,D_max,D_min,aspect,shading1,shading2,S_1,S_2,B,savings) %>% return()
+  }
+
+  agents_in <- gen_optimised_pvbess(agents_in)
+  survey_u <- agents_in %>% dplyr::group_by(q14) %>% dplyr::summarise(savings=-median(savings))
+  empirical_u <- empirical_utils_oo %>% dplyr::filter(calibration==cal_run) %>% dplyr::filter(question_code=="q14")
+  empirical_u <- empirical_u %>% dplyr::select(response_code,du_average) %>% dplyr::rename("q14"=response_code)
+  survey_u <- survey_u %>% dplyr::inner_join(empirical_u)
+  #coef(lm(du_average~savings,survey_u))[2] %>% return()
+  IQR(survey_u$du_average)/IQR(survey_u$savings) %>% return()
+
+}
 
 

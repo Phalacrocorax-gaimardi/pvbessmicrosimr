@@ -8,7 +8,7 @@
 A data frame with 8 rows and 2 variables:
 \describe{
   \item{\code{azimuth}}{character compass point}
-  \item{\code{potential}}{double in hours}
+  \item{\code{potential}}{double hours}
 }
 }
 \usage{
@@ -18,6 +18,6 @@ solar_potentials
 mean annual solar potential by azimuth for ac PV systems for a 30 degree pitch roof
 }
 \details{
-PVWATTs at Birr
+based on PVWATTs data at Birr
 }
 \keyword{datasets}

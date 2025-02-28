@@ -139,7 +139,7 @@ pvbess_cost_fun <- function(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D
   #if(p_f > pmin(p_d,p_e)) stop("FiT is too high. Self-consumption of solar energy assumption is violated")
   #if(p_d > p_e) stop("unlikely that evening rate is lower than daylight rate")
 
-  df <- energy_flows_fast(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D_max,D_min,params)
+  df <- energy_flows_cpp(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D_max,D_min,mget(ls(params),params) %>% unlist()) %>% tibble::as_tibble()
   operating_cost <- params$evening_tariff*sum(df$evening_imports) + params$day_tariff*sum(df$day_imports) + p_n*sum(df$E_n1+df$E_n2)
   #include fit revenues
   fit_revenue <- params$fit*sum(df$day_exports)
@@ -163,8 +163,9 @@ pvbess_cost_fun <- function(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D
 #' @examples
 annualised_system_cost <- function(S,B,params){
   #
-  bess_cost <- dplyr::if_else(B < 0.001,0,params$battery_install_cost + B*params$battery_cost)
-  pv_cost <- dplyr::if_else(S < 0.001,0,params$pv_install_cost + S*params$pv_cost)
+  bess_cost <- dplyr::if_else(B > 0,params$battery_install_cost + B*params$battery_cost,0)
+  pv_cost <- dplyr::if_else(S > 0 ,params$pv_install_cost + S*params$pv_cost,0)
+
   grant <- dplyr::if_else(S == 0 & B == 0,0,seai_grant_fast(params,S,B))
   synergy <- dplyr::if_else((S > 0) & (B > 0),0, params$pvbess_cost_synergy)
   amort(r=params$finance_rate,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
@@ -194,11 +195,11 @@ energy_flows_fast <- function(S_1,S_2, aspect,shading_factor_1=1, shading_factor
   if(!(aspect %in% c("South-North","East-West","SW-NE","SE-NW"))) stop("bad house orientation label")
   day <- 1:365
   # Calculate demand, solar potential, and rho
-  demand <- demand_fun(day, D_max, D_min,lag_D = params$lag_D)
-  solar_potential_1 <- shading_factor_1*solar_potential_fun(day, params$latitude, params$K_max, params$K_min,azimuth_angle=stringr::str_split(aspect,"-")[[1]][1])
-  solar_potential_2 <- shading_factor_2*solar_potential_fun(day, params$latitude, params$K_max, params$K_min,azimuth_angle=stringr::str_split(aspect,"-")[[1]][2])
+  demand <- demand_cpp(day, D_max, D_min,lag_D = params$lag_D)
+  solar_potential_1 <- shading_factor_1*solar_potential_cpp(day, params$latitude, params$K_max, params$K_min,azimuth_angle=stringr::str_split(aspect,"-")[[1]][1])
+  solar_potential_2 <- shading_factor_2*solar_potential_cpp(day, params$latitude, params$K_max, params$K_min,azimuth_angle=stringr::str_split(aspect,"-")[[1]][2])
 
-  rho <- daylight_usage_fun(day, rho_solstice=params$rho_solstice)
+  rho <- daylight_usage_cpp(day, rho_solstice=params$rho_solstice)
 
   # Create data.table
   dt <- data.table(
@@ -236,6 +237,49 @@ energy_flows_fast <- function(S_1,S_2, aspect,shading_factor_1=1, shading_factor
   }
   return(tibble::as_tibble(dt))
 }
+
+energy_flows_faster <- function(S_1, S_2, aspect, shading_factor_1 = 1, shading_factor_2 = 1, B, D_max = 18, D_min = 11, params) {
+  if (!(aspect %in% c("South-North", "East-West", "SW-NE", "SE-NW")))
+    stop("bad house orientation label")
+
+  # Extract azimuth angles
+  azimuth_angles <- unlist(strsplit(aspect, "-"))
+
+  # Create day vector
+  day <- 1:365
+
+  # Calculate demand, solar potential, and rho
+  demand <- demand_fun(day, D_max, D_min, lag_D = params$lag_D)
+  solar_potential_1 <- shading_factor_1 * solar_potential_fun(day, params$latitude, params$K_max, params$K_min, azimuth_angle = azimuth_angles[1])
+  solar_potential_2 <- shading_factor_2 * solar_potential_fun(day, params$latitude, params$K_max, params$K_min, azimuth_angle = azimuth_angles[2])
+  rho <- daylight_usage_fun(day, rho_solstice = params$rho_solstice)
+
+  # Create data.table
+  dt <- data.table(day, demand, solar_potential_1, solar_potential_2, rho)
+
+  # Compute sh_tilde and d_tilde first
+  dt[, sh_tilde := S_1 * solar_potential_1 + S_2 * solar_potential_2 - rho * demand]
+  dt[, d_tilde := (1 - rho) * demand]
+
+  # Compute energy flows separately
+  dt[, E_s := pmax(0, pmin(B, sh_tilde, d_tilde))]
+  dt[, E_n1 := pmax(0, pmin(B, -sh_tilde))]
+  dt[, E_n2 := data.table::fifelse(sh_tilde < 0, pmin(B - E_n1, d_tilde), pmin(B, d_tilde) - E_s)]
+
+  # Compute flags separately
+  dt[, f1 := as.integer(d_tilde - E_s - E_n2 > 0)]
+  dt[, f2 := as.integer(-sh_tilde - E_n1 > 0)]
+  dt[, f3 := as.integer(sh_tilde - E_s > 0)]
+
+  # Compute imports/exports separately
+  dt[, evening_imports := (d_tilde - E_s - E_n2) * f1]
+  dt[, day_imports := (-sh_tilde - E_n1) * f2]
+  dt[, day_exports := (sh_tilde - E_s) * f3]
+
+  # Return as tibble
+  return(tibble::as_tibble(dt))
+}
+
 
 #' lcoe_pv
 #'
@@ -449,7 +493,7 @@ pvbess_optim_complex <- function(aspect,solar_constraint_1,solar_constraint_2,sh
 
   i <- which.min(res)
 
-  tib0 <- tibble::tibble(aspect,S1_constraint=solar_constraint_1,S2_constraint=solar_constraint_2,D_max=D_max,D_min=D_min,p_d=params$day_tariff,p_e=params$evening_tariff,p_n=p_n,p_f=params$fit,pv_unit_cost=params$pv_cost,storage_unit_cost=params$battery_cost,cost_synergy = params$pvbess_cost_synergy,resilience_premium=params$resilience_premium)
+  #tib0 <- tibble::tibble(aspect,S1_constraint=solar_constraint_1,S2_constraint=solar_constraint_2,D_max=D_max,D_min=D_min,p_d=params$day_tariff,p_e=params$evening_tariff,p_n=p_n,p_f=params$fit,pv_unit_cost=params$pv_cost,storage_unit_cost=params$battery_cost,cost_synergy = params$pvbess_cost_synergy,resilience_premium=params$resilience_premium)
 
   if(i==4) tib1 <- tibble::tibble(S_1=result_sb$solution[1],S_2=result_sb$solution[2],B=result_sb$solution[3],cost_optimal=result_sb$objective)
   if(i==1) tib1 <- tibble::tibble(S_1=0,S_2=0,B=0,cost_optimal=base_cost)
@@ -460,5 +504,4 @@ pvbess_optim_complex <- function(aspect,solar_constraint_1,solar_constraint_2,sh
   #tib1 %>% dplyr::bind_cols(tib0) %>% return()
   tib1 %>% return()
 }
-
 
