@@ -198,7 +198,16 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
 #agents_init <- initialise_agents(sD,2010,cal_run=1) #cal run is irrelevant here
 
 
-get_financial_scale <- function(agents_in,cal_run){
+#' get_financial_utility_scale
+#'
+#' @param agents_in agent chacteristics e.g. output by initialise_agents()
+#' @param cal_run calibration run in 1 to 100
+#'
+#' @returns a scalar
+#' @export
+#'
+#' @examples
+get_financial_utility_scale <- function(agents_in,cal_run){
 
   gen_optimised_pvbess <- function(agents_in,n_sample=nrow(pv_survey_oo),tariff_plan="night_saver",no_grant = FALSE){
 
