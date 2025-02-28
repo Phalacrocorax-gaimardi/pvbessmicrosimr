@@ -192,8 +192,20 @@ DataFrame energy_flows_cpp(double S_1, double S_2, std::string aspect,
   );
 }
 
+//' @name seai_grant_cpp
+//' @title seai_grant_cpp
+//' @description The fast version of seai_grant
+//'
+//' @param params fast scenario parameters
+//' @param s solar capacity in kW
+//' @param b battery capacity in kWh
+//' @return grant amount in euros
+//' @export
+//'
+//' @examples
+
 // [[Rcpp::export]]
-double seai_grant_cpp(List params, double s, double b) {
+double seai_grant_cpp(NumericVector params, double s, double b) {
   // Extract parameters
   double sol_lower_threshold = params["sol_lower_threshold"];
   double sol_upper_threshold = params["sol_upper_threshold"];

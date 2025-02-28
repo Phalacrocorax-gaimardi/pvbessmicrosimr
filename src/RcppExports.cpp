@@ -99,12 +99,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // seai_grant_cpp
-double seai_grant_cpp(List params, double s, double b);
+double seai_grant_cpp(NumericVector params, double s, double b);
 RcppExport SEXP _pvbessmicrosimr_seai_grant_cpp(SEXP paramsSEXP, SEXP sSEXP, SEXP bSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< List >::type params(paramsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type params(paramsSEXP);
     Rcpp::traits::input_parameter< double >::type s(sSEXP);
     Rcpp::traits::input_parameter< double >::type b(bSEXP);
     rcpp_result_gen = Rcpp::wrap(seai_grant_cpp(params, s, b));

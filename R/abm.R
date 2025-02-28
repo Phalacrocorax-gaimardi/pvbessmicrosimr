@@ -212,7 +212,7 @@ get_financial_utility_scale <- function(agents_in,cal_run){
   gen_optimised_pvbess <- function(agents_in,n_sample=nrow(pv_survey_oo),tariff_plan="night_saver",no_grant = FALSE){
 
     survey_time <- 2024
-    params <- scenario_params(sD,yeartime)
+    params <- scenario_params(sD,survey_time)
     if(no_grant) params$grant_removal_date <- yeartime -1 #remove grant
     #empirical_u <- empirical_utils_oo %>% dplyr::filter(calibration==cal_run)
     agents_in <- agents_in %>% dplyr::slice_sample(n=n_sample) %>% dplyr::rowwise() %>% dplyr::mutate(result = list(pvbess_optim_complex(aspect,round(area_1*params$kWp_per_m2),round(area_2*params$kWp_per_m2),shading1,shading2,D_max,D_min,params,tariff_plan=tariff_plan))) %>% tidyr::unnest_wider(result)
@@ -225,8 +225,8 @@ get_financial_utility_scale <- function(agents_in,cal_run){
   empirical_u <- empirical_u %>% dplyr::select(response_code,du_average) %>% dplyr::rename("q14"=response_code)
   survey_u <- survey_u %>% dplyr::inner_join(empirical_u)
   #coef(lm(du_average~savings,survey_u))[2] %>% return()
-  IQR(survey_u$du_average)/IQR(survey_u$savings) %>% return()
-
+  #IQR(survey_u$du_average)/IQR(survey_u$savings) %>% return()
+  mad(survey_u$du_average)/mad(survey_u$savings) #mean absolute deviation relative to median
 }
 
 

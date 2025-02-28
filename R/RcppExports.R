@@ -19,6 +19,19 @@ NULL
 #' @param latitude latitude
 NULL
 
+#' @name seai_grant_cpp
+#' @title seai_grant_cpp
+#' @description The fast version of seai_grant
+#'
+#' @param params fast scenario parameters
+#' @param s solar capacity in kW
+#' @param b battery capacity in kWh
+#' @return grant amount in euros
+#' @export
+#'
+#' @examples
+NULL
+
 demand_cpp <- function(day, D_max, D_min, lag_D = 30.0) {
     .Call(`_pvbessmicrosimr_demand_cpp`, day, D_max, D_min, lag_D)
 }
