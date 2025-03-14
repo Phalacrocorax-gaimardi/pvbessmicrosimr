@@ -10,9 +10,10 @@ update_agents(
   agents_in,
   social_network,
   ignore_social = F,
-  micro_cal,
+  beta. = 0.2532785,
+  lambda. = 0.105,
   p. = 0.0085,
-  lambda. = 0.105
+  cal_run
 )
 }
 \arguments{
@@ -26,11 +27,13 @@ update_agents(
 
 \item{ignore_social}{option to ignore social effects. Default is FALSE.}
 
-\item{micro_cal}{micro calibration run number}
+\item{beta.}{financial utility scale factor}
+
+\item{lambda.}{bias (fixed in macro-calibration)}
 
 \item{p.}{speed parameter (fixed in macro-calibration)}
 
-\item{lambda.}{bias (fixed in macro-calibration)}
+\item{cal_run}{microcalibration run index between 1 and 100}
 }
 \value{
 updated agent dataframe

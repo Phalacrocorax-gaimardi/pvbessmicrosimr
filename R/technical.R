@@ -196,3 +196,36 @@ roundr <- function(x){
   return(sample(c(x1,x1+1),size=1,prob=weights))
 }
 
+
+
+
+#' solar_round_down
+#'
+#' round solar installation capacity down to increment of panel capacity
+#'
+#' @param x optiumum S
+#' @param solar_increment default 0.25
+#'
+#' @returns capacity in kWh
+#' @export
+#'
+#' @examples
+solar_round_down <- function(x,solar_increment=0.25) {
+  floor(x / solar_increment) * solar_increment
+}
+
+#' bess_round
+#'
+#' round to nearest multiple of bess_increment
+#'
+#' @param x optimum storage
+#' @param bess_increment minimum bess increment
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+bess_round  <- function(x, bess_increment=2.5) {
+  round(x / bess_increment) * bess_increment
+}
+

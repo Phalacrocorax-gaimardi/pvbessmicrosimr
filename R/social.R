@@ -12,16 +12,17 @@
 #' @export
 #' @importFrom magrittr %>%
 #' @examples
-make_artificial_society <- function(society=society,homophily=homophily,nu=5){
+make_artificial_society <- function(society=society,homophily=homophily,nu=4.5){
   #create a random homophilous social network
   #social distance measure=gower distance
   #nu gives the social distance decay exponentlarger mu higher assortativity
   #agents with degree zero remain degree zero but there may be additional nodes with degree zero
+  society <- society %>% dplyr::mutate(degree = dplyr::if_else(is.na(degree), sample(c(0,1:5,15,25),size=1,prob = c(0.51016949,0.03389831,0.10338983,0.09322034,0.08644068,0.09152542,0.06101695,0.02033898)),degree))
   society_factor <- unclass(society %>% dplyr::mutate_if(is.character,as.factor)) %>% as.data.frame()
   society_factor1 <- dplyr::filter(society_factor,degree != 0)
   society1 <- dplyr::filter(society, degree != 0)
 
-  N_society1 <- dim(society1)[1]
+  N_society1 <- nrow(society1)
 
 
   zeronodes <- dplyr::filter(society,degree==0)$ID #nodes with no influencers
@@ -50,8 +51,10 @@ make_artificial_society <- function(society=society,homophily=homophily,nu=5){
 }
 
 #g <- make_artificial_society(pv_society_oo,homophily,4.5)
-#cor(igraph::degree(g),pv_society$degree) #correlation is 73%
-#plot(igraph::degree(g), pv_society$degree)
+#pv_soc <- pv_society_oo %>% dplyr::mutate(degree = dplyr::if_else(is.na(degree), sample(c(0,1:5,15,25),size=1,prob = c(0.51016949,0.03389831,0.10338983,0.09322034,0.08644068,0.09152542,0.06101695,0.02033898)),degree))
+
+#cor(igraph::degree(g),pv_soc$degree) #correlation is 73%
+#plot(igraph::degree(g), pv_soc$degree)
 
 
 #' get_network_characteristics
@@ -68,7 +71,7 @@ get_network_characteristics <- function(society,g){
   knitr::kable(homophily1 %>% dplyr::filter(variable != "degree")) %>% kableExtra::kable_styling()
 }
 
-
+#get_network_characteristics(pv_society_oo,g)
 
 #igraph::transitivity(g,type="global") #low transitivity ... need clique models
 
@@ -84,4 +87,36 @@ get_network_characteristics <- function(society,g){
 #df_0 %>% ggplot( aes(deg,nu)) + geom_point() + geom_vline(xintercept=mean(pv_society_oo$degree)) + geom_smooth()+scale_x_continuous(breaks=0:12)
 # observed degrees fixes nu=4.5
 #df %>% select(-deg) %>% pivot_longer(-nu) %>% ggplot( aes(nu,value,colour=name)) + geom_point()
+
+#pv_society_oo
+#zet_survey_lab <- readxl::read_xlsx("~/Policy/SurveyDataAndAnalysis/Data/ZET_survey_2024_data_labels.xlsx",sheet=1)
+#zet_survey <- readxl::read_xlsx("~/Policy/SurveyDataAndAnalysis/Data/ZET_survey_2024_values.xlsx",sheet=1)
+
+#zet1 <- zet_survey_lab %>% dplyr::filter(serial %in% pv_survey_oo$serial)
+#zet1$ID <- 1:nrow(zet1)
+#society_codes <- c("ID","qb","qa","qc2","qd","qf","qg","q29")
+#zet1 <- zet1 %>% dplyr::select(all_of(society_codes))
+#names(zet1) <- c("ID","age","gender","region","class","education","area_type","degree")
+#recode_degree <- function(char){
+
+ # dplyr::case_when(char==1~1,char=="10-19"~15,char=="2"~2,char=="20+"~25,char=="3"~3,char=="4"~4,char=="5"~5,char=="Don't know"~NA,char=="None"~0)
+#}
+#recode_eduation <- function(n){
+
+ # qanda %>% filter(question_code == "qf")
+#  n_new <- case_when( n %in% c(1:4,9)~1, !(n %in% c(1:4,9))~n-3)
+#  return(n_new)
+#}
+#recode_income <- function(n){
+
+  #qanda %>% filter(question_code == "qh")
+#  n_new <- case_when( n %in% c(1:2)~1, n %in% 3:4~2, n %in% 5:6~3, n %in% 7:8~4, n %in% 9:11~5, n==12~6)
+#  return(n_new)
+#}
+
+#zet1 <- zet1 %>% dplyr::mutate(degree=recode_degree(degree))
+#pv_survey <- zet_survey %>% dplyr::select(pv_questions$question_code)
+#pv_society_oo <- zet1
+
+
 

@@ -4,7 +4,7 @@
 \alias{make_artificial_society}
 \title{make_artificial_society}
 \usage{
-make_artificial_society(society = society, homophily = homophily, nu = 5)
+make_artificial_society(society = society, homophily = homophily, nu = 4.5)
 }
 \arguments{
 \item{society}{tibble containing society}

@@ -148,6 +148,95 @@ pvbess_cost_fun <- function(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D
   operating_cost + annualised_system_cost(S_1+S_2,B,params) - params$resilience_premium*B/D_max + params$standing_charge  %>% return()
 }
 
+#' pvbess_opex_cost_fun
+#'
+#' annual operation cost i.e. grid costs (usage + standing charge), FiT, resilience premium
+#'
+#' @param S_1 installed PV capacity primary roof section
+#' @param S_2 installed PV capacity secondary roof section
+#' @param aspect orientation of building
+#' @param shading_factor_1 primary shading factor
+#' @param shading_factor_2 secondary shading factor
+#' @param B storage capacity
+#' @param D_max max demand (winter)
+#' @param D_min min demand (summer)
+#' @param params parameter object created by scenario_params(sD, yeartime)
+#' @param tariff_plan if "24hr" the night rate is set equal to the day  rate
+#'
+#' @returns scalar (euros)
+#' @export
+#'
+#' @examples
+pvbess_opex_cost_fun  <- function(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D_max,D_min,params, tariff_plan ="night_saver"){
+  #
+  if(!(tariff_plan %in% c("night_saver","24hr"))) stop("bad tariff plan")
+  p_n <- dplyr::if_else(tariff_plan=="24hr",params$day_tariff,params$night_tariff)
+
+  df <- energy_flows_cpp(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D_max,D_min,mget(ls(params),params) %>% unlist()) %>% tibble::as_tibble()
+  operating_cost <- params$evening_tariff*sum(df$evening_imports) + params$day_tariff*sum(df$day_imports) + p_n*sum(df$E_n1+df$E_n2)
+  #include fit revenues
+  fit_revenue <- params$fit*sum(df$day_exports)
+  fit_revenue <- ifelse(fit_revenue > params$fit_tax_threshold, params$fit_tax_threshold +(1-params$marginal_tax_rate)*(fit_revenue-params$fit_tax_threshold),fit_revenue)
+  operating_cost <- operating_cost - fit_revenue
+  operating_cost - params$resilience_premium*B/D_max + params$standing_charge  %>% return()
+}
+
+
+#' pvbess_exports_fun
+#'
+#' annual exports to grid in kWh
+#'
+#' @param S_1 installed PV capacity primary roof section
+#' @param S_2 installed PV capacity secondary roof section
+#' @param aspect orientation of building
+#' @param shading_factor_1 primary shading factor
+#' @param shading_factor_2 secondary shading factor
+#' @param B storage capacity
+#' @param D_max max demand (winter)
+#' @param D_min min demand (summer)
+#' @param params parameter object created by scenario_params(sD, yeartime)
+#' @param tariff_plan if "24hr" the night rate is set equal to the day  rate
+#'
+#' @returns scalar (kWh)
+#' @export
+#'
+#' @examples
+pvbess_exports_fun  <- function(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D_max,D_min,params, tariff_plan ="night_saver"){
+  #
+  if(!(tariff_plan %in% c("night_saver","24hr"))) stop("bad tariff plan")
+  p_n <- dplyr::if_else(tariff_plan=="24hr",params$day_tariff,params$night_tariff)
+
+  df <- energy_flows_cpp(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D_max,D_min,mget(ls(params),params) %>% unlist()) %>% tibble::as_tibble()
+  sum(df$day_exports) %>% return()
+}
+
+#' pvbess_imports_fun
+#'
+#' annual imports from grid in kWh
+#'
+#' @param S_1 installed PV capacity primary roof section
+#' @param S_2 installed PV capacity secondary roof section
+#' @param aspect orientation of building
+#' @param shading_factor_1 primary shading factor
+#' @param shading_factor_2 secondary shading factor
+#' @param B storage capacity
+#' @param D_max max demand (winter)
+#' @param D_min min demand (summer)
+#' @param params parameter object created by scenario_params(sD, yeartime)
+#' @param tariff_plan if "24hr" the night rate is set equal to the day  rate
+#'
+#' @returns scalar (kWh)
+#' @export
+#'
+#' @examples
+pvbess_imports_fun  <- function(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D_max,D_min,params, tariff_plan ="night_saver"){
+  #
+  if(!(tariff_plan %in% c("night_saver","24hr"))) stop("bad tariff plan")
+  p_n <- dplyr::if_else(tariff_plan=="24hr",params$day_tariff,params$night_tariff)
+
+  df <- energy_flows_cpp(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D_max,D_min,mget(ls(params),params) %>% unlist()) %>% tibble::as_tibble()
+  sum(df$day_imports) %>% return()
+}
 
 #' annualised_system_cost
 #'
@@ -156,19 +245,33 @@ pvbess_cost_fun <- function(S_1,S_2,aspect,shading_factor_1,shading_factor_2,B,D
 #' @param S total installed solar capacity
 #' @param B storage capacity
 #' @param params parameters created by scenario_params(sD,yeartime)
+#' @param upgrade whether this is a pv system upgrade or an initial installation
 #'
 #' @return annual cost in euros
 #' @export
 #'
 #' @examples
-annualised_system_cost <- function(S,B,params){
+annualised_system_cost <- function(S,B,params,upgrade=FALSE){
   #
-  bess_cost <- dplyr::if_else(B > 0,params$battery_install_cost + B*params$battery_cost,0)
-  pv_cost <- dplyr::if_else(S > 0 ,params$pv_install_cost + S*params$pv_cost,0)
+  dplyr::if_else(!upgrade,{
+    bess_cost <- dplyr::if_else(B > 0,params$battery_install_cost + B*params$battery_cost,0)
+    pv_cost <- dplyr::if_else(S > 0 ,params$pv_install_cost + S*params$pv_cost,0)
 
-  grant <- dplyr::if_else(S == 0 & B == 0,0,seai_grant_fast(params,S,B))
-  synergy <- dplyr::if_else((S > 0) & (B > 0),0, params$pvbess_cost_synergy)
-  amort(r=params$finance_rate,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
+    grant <- dplyr::if_else(S == 0 & B == 0,0,seai_grant_fast(params,S,B))
+    #synergy when BESS and PV installed together
+    synergy <- dplyr::if_else((S > 0) & (B > 0),params$pvbess_cost_synergy,0)
+    amort(r=params$finance_rate,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
+  },{
+    #simple assumption: battery install cost is halved
+    bess_cost <- dplyr::if_else(B > 0,params$battery_install_cost/2 + B*params$battery_cost,0)
+    #pv_install cost is halved
+    pv_cost <- dplyr::if_else(S > 0 ,params$pv_install_cost/2 + S*params$pv_cost,0)
+    #there is no grant
+    grant <- 0
+    #there is no synergy
+    synergy <- 0
+    amort(r=params$finance_rate,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
+  })
 
 }
 
@@ -504,4 +607,92 @@ pvbess_optim_complex <- function(aspect,solar_constraint_1,solar_constraint_2,sh
   #tib1 %>% dplyr::bind_cols(tib0) %>% return()
   tib1 %>% return()
 }
+
+
+#' pvbess_optim_upgrade
+#'
+#' @param S1_old old primary roof capacity
+#' @param S2_old old secondary roof capacity
+#' @param B_old old BESS
+#' @param capex_old the existing annualised investment cost before the upgrade
+#' @param aspect aspect
+#' @param solar_constraint_1 additional primary roof capacity
+#' @param solar_constraint_2 additional secondary roof capacity
+#' @param shading_factor_1 shading factor 1
+#' @param shading_factor_2 shading factor 2
+#' @param D_max winter average daily max
+#' @param D_min summer average daily min
+#' @param params params
+#' @param tariff_plan tariff plan, default "night-saver"
+#'
+#' @returns data frame
+#' @export
+#'
+#' @examples
+pvbess_optim_upgrade <- function(S1_old,S2_old,B_old,capex_old,aspect,solar_constraint_1,solar_constraint_2,shading_factor_1,shading_factor_2,D_max,D_min,params, tariff_plan="night_saver"){
+
+  if(!(tariff_plan %in% c("night_saver","24hr"))) stop("bad tariff plan")
+  p_n <- dplyr::if_else(tariff_plan=="24hr",params$day_tariff,params$night_tariff)
+  #annualised capex
+  #capex_old <- annualised_system_cost(S1_old+S2_old,B_old,params)
+  is_upgrade <- dplyr::if_else(S1_old > 0 | S2_old > 0 | B_old > 0, TRUE,FALSE)
+  #the cost function to be minimised
+  fun_sb <- function(add_capacities){
+    #capacities = c(S_1,S_2,B)
+    opex_new <- pvbess_opex_cost_fun(S1_old+add_capacities[1],S2_old+add_capacities[2],aspect,shading_factor_1,shading_factor_2,B_old+add_capacities[3],D_max,D_min,params, tariff_plan)
+    opex_new +annualised_system_cost(add_capacities[1]+add_capacities[2],add_capacities[3],params, upgrade=is_upgrade)
+    }
+
+  fun_s <- function(add_capacities){
+    opex_new <- pvbess_opex_cost_fun(S1_old+add_capacities[1],S2_old+add_capacities[2],aspect,shading_factor_1,shading_factor_2,B_old,D_max,D_min,params, tariff_plan)
+    opex_new+annualised_system_cost(add_capacities[1]+add_capacities[2],0,params, upgrade=is_upgrade)
+  }
+
+  fun_b <- function(B){
+    #params[1] is solar params[2] is battery
+    opex_new <- pvbess_opex_cost_fun(S1_old,S2_old,aspect,shading_factor_1,shading_factor_2,B_old+B,D_max,D_min,params, tariff_plan)
+    opex_new+annualised_system_cost(0,B,params, upgrade=is_upgrade)
+    }
+
+  #result_sb <- optim(c(0.9*S_constraint,0.5*D_max),fun_sb, method="L-BFGS-B", lower=c(0,0), upper=c(S_constraint,D_max))
+  result_sb <- nloptr::nloptr(c(0.9*solar_constraint_1,0.9*solar_constraint_2,0.9*D_max),fun_sb, lb=c(0,0,0), ub=c(solar_constraint_1,solar_constraint_2,D_max),
+                              opts=list(algorithm="NLOPT_LN_BOBYQA",maxeval=1000))
+
+  #result_s <- optim(0.9*S_constraint,fun_s, method="L-BFGS-B", lower=0, upper=S_constraint)
+  result_s <- nloptr::nloptr(c(0.9*solar_constraint_1,0.9*solar_constraint_2),fun_s, lb=c(0,0), ub=c(solar_constraint_1,solar_constraint_2),
+                             opts=list(algorithm="NLOPT_LN_BOBYQA",maxeval=1000))
+
+  #result_b <- optim(0.9*D_max,fun_b, method="L-BFGS-B", lower=0, upper=D_max)
+  result_b <- nloptr::nloptr(0.9*D_max,fun_b, lb=0, ub=D_max,
+                             opts=list(algorithm="NLOPT_LN_BOBYQA",maxeval=1000))
+
+
+  base_cost <- fun_sb(c(0,0,0))
+  #base_cost <- opex_old+annualised_system_cost(S1_old+S2_old,B_old,params)
+  #base_cost <- opex_old + annualised_system_cost(S1_old+S2_old,B = params,upgrade=F)
+  #compare four solutions
+  #res <- c(base_cost,result_s$value,result_b$value,result_sb$value)
+  res <- c(base_cost,result_s$objective,result_b$objective,result_sb$objective)
+
+  i <- which.min(res)
+
+  #tib0 <- tibble::tibble(aspect,S1_constraint=solar_constraint_1,S2_constraint=solar_constraint_2,D_max=D_max,D_min=D_min,p_d=params$day_tariff,p_e=params$evening_tariff,p_n=p_n,p_f=params$fit,pv_unit_cost=params$pv_cost,storage_unit_cost=params$battery_cost,cost_synergy = params$pvbess_cost_synergy,resilience_premium=params$resilience_premium)
+
+  if(i==4) tib1 <- tibble::tibble(dS_1=result_sb$solution[1],dS_2=result_sb$solution[2],dB=result_sb$solution[3])
+  if(i==1) tib1 <- tibble::tibble(dS_1=0,dS_2=0,dB=0)
+  if(i==2) tib1 <- tibble::tibble(dS_1=result_s$solution[1],dS_2=result_s$solution[2],dB=0)
+  if(i==3) tib1 <- tibble::tibble(dS_1=0,dS_2=0,dB=result_b$solution[1])
+  opex_old <- pvbess_opex_cost_fun(S1_old,S2_old,aspect,shading_factor_1,shading_factor_2,B_old,D_max,D_min,params, tariff_plan)
+
+  tib1 <- tib1 %>% dplyr::mutate(capex_add=annualised_system_cost(dS_1+dS_2,dB,params,upgrade=is_upgrade),capex_new=capex_old+capex_add)
+  tib1 <- tib1 %>% dplyr::mutate(opex_new = pvbess_opex_cost_fun(S1_old+dS_1,S2_old+dS_2,aspect,shading_factor_1,shading_factor_2,B_old+dB,D_max,D_min,params, tariff_plan)
+  ,cost_old=capex_old+opex_old, cost_optimal=capex_old+capex_add+opex_new)
+  tib1 <- tib1 %>% dplyr::mutate(savings = (cost_optimal-cost_old)/cost_old)
+  tib1 <- tib1 %>% dplyr::mutate(grant = dplyr::if_else(is_upgrade,0,seai_grant_fast(params,dS_1+dS_2, dB)))
+
+  #tib1 %>% dplyr::bind_cols(tib0) %>% return()
+  tib1 %>% return()
+}
+
+
 

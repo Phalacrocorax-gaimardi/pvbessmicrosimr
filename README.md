@@ -6,32 +6,33 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of pvbessmicrosimr is to …
+*pvbessmicrosimr* simulates the update of solar PV and
+battery-energy-storage-systems (BESS) by Irish households.
+
+It is based on household survey data collected in 2024.
+Micro-calibration of this model is done by \*pvbesscalibrater.
 
 ## Installation
 
-You can install the development version of pvbessmicrosimr like so:
+You can install the latest version of *pvbessmicrosimr*:
 
 ``` r
-# FILL THIS IN! HOW CAN PEOPLE INSTALL YOUR DEV PACKAGE?
+remotes::install_github("Phalacrocorax-gaimardi/pvbessmicrosimr")
 ```
 
-## Example
+## Basic Usage
 
-This is a basic example which shows you how to solve a common problem:
+The basic usage is:
 
 ``` r
 library(pvbessmicrosimr)
+runABM(sD,Nrun=8,simulation_end=2030,use_parallel = T)
 ## basic example code
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
+*sD* is a scenario datafile containing ~100 market, technical, policy
+and macro-calibration parameters
 
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this.
+## Example
 
-You can also embed plots, for example:
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
+## Analysis

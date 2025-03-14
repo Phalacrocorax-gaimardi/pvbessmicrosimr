@@ -4,7 +4,7 @@
 \alias{annualised_system_cost}
 \title{annualised_system_cost}
 \usage{
-annualised_system_cost(S, B, params)
+annualised_system_cost(S, B, params, upgrade = FALSE)
 }
 \arguments{
 \item{S}{total installed solar capacity}
@@ -12,6 +12,8 @@ annualised_system_cost(S, B, params)
 \item{B}{storage capacity}
 
 \item{params}{parameters created by scenario_params(sD,yeartime)}
+
+\item{upgrade}{whether this is a pv system upgrade or an initial installation}
 }
 \value{
 annual cost in euros

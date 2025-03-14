@@ -498,7 +498,7 @@ survey_bills_to_kwh <- function(pv_data_in, lag_D=30){
   complete_data <- pv_data_in %>% dplyr::filter(q14!=13,q15 != 13)
   complete_data <- complete_data %>% dplyr::inner_join(bill_values %>% dplyr::rename("q15"=response_code,"lowest_bill"=bill))
   complete_data <- complete_data %>% dplyr::inner_join(bill_values %>% dplyr::rename("q14"=response_code,"highest_bill"=bill))
-  complete_data <- complete_data %>% dplyr::mutate(across(,as.numeric))
+  complete_data <- complete_data %>% dplyr::mutate(dplyr::across(dplyr::everything(),as.numeric))
   # regression model relating high and low bills
   high_model <- nls(highest_bill ~ a * lowest_bill + exp(b), start = list(a = 2, b = 1),
                    algorithm = "port", lower = c(0, -Inf), upper = c(5, Inf),data=complete_data)
