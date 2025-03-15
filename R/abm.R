@@ -6,13 +6,13 @@
 #' @param sD scenario (usable_roof_fraction only)
 #' @param yeartime start year (default 2010)
 #' @param cal_run calibration run number between 1 and 100
-#' @param lambda demand matching parameter. Large lambda is more strict.
+#' @param nu. usable roof area fraction (a parameter that needs to be determined)
 #'
 #' @return a dataframe with columns
 #' @export
 #'
 #' @examples
-initialise_agents <- function(sD,yeartime,cal_run,lambda=2){
+initialise_agents <- function(sD,yeartime,cal_run,nu.=0.5){
 
   #initialise to 2010
   params <- scenario_params(sD,yeartime)
@@ -25,7 +25,7 @@ initialise_agents <- function(sD,yeartime,cal_run,lambda=2){
   #agents <- agents %>% dplyr::inner_join(pv_survey_oo %>% dplyr::select(ID,housecode,region,q1))
   agents <- agents %>% dplyr::inner_join(pv_surv)
   #agents <- agents %>% dplyr::inner_join(cer_demand)
-  agents <- agents  %>% dplyr::rowwise() %>% dplyr::mutate(area_1=gen_roofsection_solar_area(qc2,q1,q2,q3,q5,roof_floor_ratio=2/sqrt(3), usable_roof_fraction = params$usable_roof_fraction))
+  agents <- agents  %>% dplyr::rowwise() %>% dplyr::mutate(area_1=gen_roofsection_solar_area(qc2,q1,q2,q3,q5,roof_floor_ratio=2/sqrt(3), usable_roof_fraction = nu.))
   agents <- agents %>% dplyr::mutate(area_2 = area_1)
   #remove non-stochastic features q1 and region than can be restored later using pv_survey_oo based on ID
   agents <- agents %>% dplyr::select(-qc2,-q1,-q2,-q3,-q5)
@@ -232,6 +232,8 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
   p <- sD %>% dplyr::filter(parameter=="p.") %>% dplyr::pull(value)
   lambda <- sD %>% dplyr::filter(parameter=="lambda.") %>% dplyr::pull(value)
   beta <- sD %>% dplyr::filter(parameter=="beta.") %>% dplyr::pull(value)
+  nu <- sD %>% dplyr::filter(parameter=="nu.") %>% dplyr::pull(value)
+
   print(paste("p.=",p,"lambda=",lambda,"beta.=",beta))
   seai_elec <- pvbessmicrosimr::seai_elec
   #bi-monthly runs
@@ -262,7 +264,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       #randomiise ICEV emissions assignment
       #choose segments
       micro_cal_run <- sample(1:100,1)
-      agents_in <- initialise_agents(sD,year_zero,micro_cal_run)
+      agents_in <- initialise_agents(sD,year_zero,micro_cal_run,nu.=nu)
       u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==micro_cal_run) %>% dplyr::select(-calibration)
       #no transactions
       agents_in$transaction <- FALSE
@@ -317,7 +319,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       #choose market segment for each agent
       micro_cal_run <- sample(1:100,1)
       u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==micro_cal_run) %>% dplyr::select(-calibration)
-      agents_in <- initialise_agents(sD,year_zero,micro_cal_run)
+      agents_in <- initialise_agents(sD,year_zero,micro_cal_run,nu.=nu)
       #no transactions
       agents_in$transaction <- FALSE
       agent_ts <- vector("list",Nt)
@@ -364,19 +366,20 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
 #' @param beta financial utility scale (drawn from financial_utility_scale)
 #' @param lambda bias correction parameter
 #' @param p rate parameter default 0.085
+#' @param nu usable roof fraction for solar
 #'
 #' @returns
 #' @export
 #'
 #' @examples
-calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p){
+calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu){
   #
   year_zero <- 2015
   simulation_end <- 2024
   resample_society=F
   ignore_social=F
   #calibration params:: MOVED TO SYSTDATA WHEN CALIBRATION COMPLETE
-  print(paste("p.=",p,"lambda.=",lambda,"beta.=",beta))
+  print(paste("beta.=",beta,"lambda.=",lambda,"p.=",p,"nu."=nu))
   seai_elec <- pvbessmicrosimr::seai_elec
   #bi-monthly runs
   Nt <- round((simulation_end-year_zero+1)*6)
@@ -409,7 +412,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p){
       micro_run <- sample(1:100,1)
       u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==micro_run) %>% dplyr::select(-calibration)
 
-      agents_in <- initialise_agents(sD,year_zero,micro_run)
+      agents_in <- initialise_agents(sD,year_zero,micro_run,nu.=nu)
       #no transactions
       agents_in$transaction <- FALSE
       agent_ts<- vector("list",Nt)
@@ -459,7 +462,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p){
       }
       micro_run <- sample(1:100,1)
       u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==micro_run) %>% dplyr::select(-calibration)
-      agents_in <- initialise_agents(sD,year_zero,cal_run)
+      agents_in <- initialise_agents(sD,year_zero,cal_run,nu.=nu)
       #no transactions
       agents_in$transaction <- FALSE
       agent_ts <- vector("list",Nt)
@@ -491,7 +494,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p){
   isea_dates <- c("2023-06-01","2024-06-01")
   cal <- abm %>% dplyr::filter(date %in% isea_dates) %>% dplyr::group_by(simulation,date) %>% dplyr::summarise(S=sum(S1_new+S2_new),adopted=sum(S1_new > 0 | S2_new>0,na.rm=T))
   cal <- cal %>% dplyr::ungroup() %>% dplyr::group_by(date) %>% dplyr::summarise(MW =1.21e+3/752*mean(S), n= 1.21e+6/752*mean(adopted))
-  tibble::tibble(beta.=beta,lambda.=lambda,p.=p) %>% dplyr::bind_cols(cal) %>% return()
+  tibble::tibble(beta.=beta,lambda.=lambda,p.=p,nu.=nu) %>% dplyr::bind_cols(cal) %>% return()
   #observations 2023 60,000 households 208 MW 2024 94,000 households 373 MW
 }
 

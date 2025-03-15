@@ -4,7 +4,7 @@
 \alias{initialise_agents}
 \title{initialise_agents}
 \usage{
-initialise_agents(sD, yeartime, cal_run, lambda = 2)
+initialise_agents(sD, yeartime, cal_run, nu. = 0.5)
 }
 \arguments{
 \item{sD}{scenario (usable_roof_fraction only)}
@@ -13,7 +13,7 @@ initialise_agents(sD, yeartime, cal_run, lambda = 2)
 
 \item{cal_run}{calibration run number between 1 and 100}
 
-\item{lambda}{demand matching parameter. Large lambda is more strict.}
+\item{nu.}{usable roof area fraction (a parameter that needs to be determined)}
 }
 \value{
 a dataframe with columns

@@ -1,7 +1,7 @@
 Package: pvbessmicrosimr
 Type: Package
 Title: This Package Simulates The Uptake Of Solar PV And Battery Storage by Households
-Version: 0.1.3
+Version: 0.1.4
 Authors@R: person("Joseph", "Wheatley", , "joe.wheatley@ucd.ie", role = c("aut", "cre"))
 Maintainer: Joseph Wheatley <joe.wheatley@ucd.ie>
 Description: More about what it does (maybe more than one line)

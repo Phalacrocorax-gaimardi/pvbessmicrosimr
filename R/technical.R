@@ -59,6 +59,12 @@ scenario_params <- function(sD,yeartime){
   scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="lag_D", value =  dplyr::filter(sD, parameter=="lag_D")$value))
   scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="rho_solstice", value =  dplyr::filter(sD, parameter=="rho_solstice")$value))
   scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="acceleration_factor", value =  acceleration_fun(sD,yeartime)))
+  scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="beta.", value =  dplyr::filter(sD, parameter=="beta.")$value))
+  scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="lambda.", value =  dplyr::filter(sD, parameter=="lambda.")$value))
+  scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="p.", value =  dplyr::filter(sD, parameter=="p.")$value))
+  scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="nu.", value =  dplyr::filter(sD, parameter=="nu.")$value))
+
+
   #return(scen)
   return(scen %>% fast_params())
 }

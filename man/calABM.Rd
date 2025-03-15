@@ -4,7 +4,7 @@
 \alias{calABM}
 \title{calABM}
 \usage{
-calABM(sD, Nrun = 4, n_unused_cores = 2, use_parallel = T, beta, lambda, p)
+calABM(sD, Nrun = 4, n_unused_cores = 2, use_parallel = T, beta, lambda, p, nu)
 }
 \arguments{
 \item{sD}{base scenario (historical)}
@@ -20,6 +20,8 @@ calABM(sD, Nrun = 4, n_unused_cores = 2, use_parallel = T, beta, lambda, p)
 \item{lambda}{bias correction parameter}
 
 \item{p}{rate parameter default 0.085}
+
+\item{nu}{usable roof fraction for solar}
 }
 \description{
 macro-calibration of pvbess
