@@ -12,7 +12,7 @@ get_financial_utility_scale(agents_in, cal_run)
 \item{cal_run}{calibration run in 1 to 100}
 }
 \value{
-a scalar
+a scalar (beta.)
 }
 \description{
 get_financial_utility_scale
