@@ -6,13 +6,12 @@
 #' @param sD scenario (usable_roof_fraction only)
 #' @param yeartime start year (default 2010)
 #' @param cal_run calibration run number between 1 and 100
-#' @param nu. usable roof area fraction (a parameter that needs to be determined)
 #'
 #' @return a dataframe with columns
 #' @export
 #'
 #' @examples
-initialise_agents <- function(sD,yeartime,cal_run,nu.=0.5){
+initialise_agents <- function(sD,yeartime,cal_run){
 
   #initialise to 2010
   params <- scenario_params(sD,yeartime)
@@ -25,7 +24,7 @@ initialise_agents <- function(sD,yeartime,cal_run,nu.=0.5){
   #agents <- agents %>% dplyr::inner_join(pv_survey_oo %>% dplyr::select(ID,housecode,region,q1))
   agents <- agents %>% dplyr::inner_join(pv_surv)
   #agents <- agents %>% dplyr::inner_join(cer_demand)
-  agents <- agents  %>% dplyr::rowwise() %>% dplyr::mutate(area_1=gen_roofsection_solar_area(qc2,q1,q2,q3,q5,roof_floor_ratio=2/sqrt(3), usable_roof_fraction = nu.))
+  agents <- agents  %>% dplyr::rowwise() %>% dplyr::mutate(area_1=gen_roofsection_solar_area(qc2,q1,q2,q3,q5,roof_floor_ratio=2/sqrt(3), usable_roof_fraction = params$nu.))
   agents <- agents %>% dplyr::mutate(area_2 = area_1)
   #remove non-stochastic features q1 and region than can be restored later using pv_survey_oo based on ID
   agents <- agents %>% dplyr::select(-qc2,-q1,-q2,-q3,-q5)
@@ -71,16 +70,12 @@ initialise_agents <- function(sD,yeartime,cal_run,nu.=0.5){
 #' @param agents_in input agent dataframe
 #' @param social_network artifical social network
 #' @param ignore_social option to ignore social effects. Default is FALSE.
-#' @param beta. financial utility scale factor
-#' @param lambda. bias (fixed in macro-calibration)
-#' @param p. speed parameter (fixed in macro-calibration)
-#' @param rho. rho_solstice
 #' @param cal_run microcalibration run index between 1 and 100
 #'
 #' @return updated agent dataframe
 #' @export
 #' @examples
-update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,beta.=0.2532785,lambda.=0.105,p.=0.0085,rho.=0.35,cal_run){
+update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,cal_run){
 
   #
   #beta. <- 0.2532785
@@ -89,7 +84,7 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
   #solar panel efficiency
   kWpm2 <- params$kWp_per_m2
   #treat rho_solstice as a parameter
-  params$rho_solstice <- rho.
+  #params$rho_solstice <- rho.
 
   empirical_u <- empirical_utils_oo %>% dplyr::filter(calibration==cal_run) %>% dplyr::select(-calibration)
 
@@ -105,7 +100,7 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
   a_s <- a_s %>% dplyr::mutate(S1_old=S1_new,S2_old = S2_new,B_old=B_new)
   a_s <- a_s %>% dplyr::mutate(capex_old=capex_new,opex_old=opex_new)
   #this subsample of agents decide to look at rooftop pv
-  b_s <- dplyr::slice_sample(a_s,n=roundr(dim(a_s)[1]*p.*params$acceleration_factor))
+  b_s <- dplyr::slice_sample(a_s,n=roundr(dim(a_s)[1]*params$p.*params$acceleration_factor))
   #remove households that have already adopted solar PV or battery storage i.e. no system upgrades
 
   b_s <- b_s %>% dplyr::select(ID,D_max,D_min,annual_kwh,aspect,area_1,area_2,shading1,shading2,w_q14,w_q45,w_theta,q14,q15,q45,S1_old,S2_old,B_old,capex_old,opex_old,transaction)
@@ -125,11 +120,11 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
   b_s <- b_s %>% dplyr::rowwise() %>% dplyr::mutate(capex_new = capex_old+annualised_system_cost(dS_1+dS_2,dB,params,upgrade=is_upgrade))
   b_s <- b_s %>% dplyr::rowwise() %>% dplyr::mutate(savings = (capex_new+opex_new-cost_old)/cost_old)
   #
-  b_s <- b_s %>% dplyr::mutate(du_fin = -beta.*w_q14*savings)
+  b_s <- b_s %>% dplyr::mutate(du_fin = -params$beta.*w_q14*savings)
   b_s <- b_s %>% dplyr::mutate(du_social = dplyr::if_else(is_upgrade,0,w_q45*du_social[q45]))
   b_s <- b_s %>% dplyr::mutate(du_theta = dplyr::if_else(is_upgrade,0,w_theta*theta))
   #sum and inude hypothetical bias correction
-  b_s <- b_s %>% dplyr::mutate(du_tot = du_fin+du_social+du_theta + lambda.)
+  b_s <- b_s %>% dplyr::mutate(du_tot = du_fin+du_social+du_theta + params$lambda.)
   #
   #identify transactions
   b_s <- b_s %>% dplyr::mutate(transaction = dplyr::if_else(du_tot > 0,TRUE,FALSE))
@@ -266,8 +261,8 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       }
       #randomiise ICEV emissions assignment
       #choose segments
-      micro_cal_run <- sample(1:100,1)
-      agents_in <- initialise_agents(sD,year_zero,micro_cal_run,nu.=nu)
+      microcal_run <- sample(1:100,1)
+      agents_in <- initialise_agents(sD,year_zero,microcal_run)
       u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==micro_cal_run) %>% dplyr::select(-calibration)
       #no transactions
       agents_in$transaction <- FALSE
@@ -279,7 +274,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       for(t in seq(2,Nt)){
         #bi-monthly
         yeartime <- year_zero+(t-1)/6
-        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,beta.=beta,lambda.=lambda,p.=p,cal_run=micro_cal_run) #static social network, everything else static
+        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run) #static social network, everything else static
       }
 
       for(t in 1:Nt) agent_ts[[t]]$t <- t
@@ -320,9 +315,9 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       }
       #randomise ICEV emissions assignment
       #choose market segment for each agent
-      micro_cal_run <- sample(1:100,1)
+      microcal_run <- sample(1:100,1)
       u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==micro_cal_run) %>% dplyr::select(-calibration)
-      agents_in <- initialise_agents(sD,year_zero,micro_cal_run,nu.=nu)
+      agents_in <- initialise_agents(sD,year_zero,microcal_run)
       #no transactions
       agents_in$transaction <- FALSE
       agent_ts <- vector("list",Nt)
@@ -332,7 +327,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
         #
         #yeartime <- year_zero+(t-1)
         yeartime <- year_zero+(t-1)/6
-        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,beta.=beta,lambda.=lambda,p.=p,cal_run=micro_cal_run) #static social network, everything else static
+        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run) #static social network, everything else static
         #agent_ts[[t]] <- tibble::tibble(t=t)
       }
 
@@ -382,6 +377,13 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
   simulation_end <- 2024
   resample_society=F
   ignore_social=F
+  #the calibration parameters
+  sD_cal <- sD
+  sD_cal[sD_cal$parameter=="beta.","value"] <- beta #financial partial utility scale
+  sD_cal[sD_cal$parameter=="lambda.","value"] <- lambda #additional hypothetical bias correction
+  sD_cal[sD_cal$parameter=="nu.","value"] <- nu #usable roof fraction for solar
+  sD_cal[sD_cal$parameter=="rho_solstice","value"] <- rho
+
   #calibration params:: MOVED TO SYSTDATA WHEN CALIBRATION COMPLETE
   print(paste("beta.=",beta,"lambda.=",lambda,"p.=",p,"nu.=",nu,"rho_solstice=",rho))
   seai_elec <- pvbessmicrosimr::seai_elec
@@ -413,10 +415,10 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
       }
       #randomiise ICEV emissions assignment
       #choose segments
-      micro_run <- sample(1:100,1)
-      u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==micro_run) %>% dplyr::select(-calibration)
+      microcal_run <- sample(1:100,1)
+      u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==microcal_run) %>% dplyr::select(-calibration)
 
-      agents_in <- initialise_agents(sD,year_zero,micro_run,nu.=nu)
+      agents_in <- initialise_agents(sD_cal,year_zero,microcal_run)
       #no transactions
       agents_in$transaction <- FALSE
       agent_ts<- vector("list",Nt)
@@ -425,7 +427,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
       for(t in seq(2,Nt)){
         #bi-monthly
         yeartime <- year_zero+(t-1)/6
-        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,beta.=beta,lambda.=lambda,p.=p,rho.=rho,cal_run=micro_run) #static social network, everything else static
+        agent_ts[[t]] <- update_agents(sD_cal,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run) #static social network, everything else static
       }
 
       for(t in 1:Nt) agent_ts[[t]]$t <- t
@@ -466,7 +468,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
       }
       microcal_run <- sample(1:100,1)
       u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==microcal_run) %>% dplyr::select(-calibration)
-      agents_in <- initialise_agents(sD,year_zero,microcal_run,nu.=nu)
+      agents_in <- initialise_agents(sD_cal,year_zero,microcal_run)
       #no transactions
       agents_in$transaction <- FALSE
       agent_ts <- vector("list",Nt)
@@ -476,7 +478,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
         #
         #yeartime <- year_zero+(t-1)
         yeartime <- year_zero+(t-1)/6
-        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,beta.=beta,lambda.=lambda,rho.=rho,p.=p,cal_run=micro_run) #static social network, everything else static
+        agent_ts[[t]] <- update_agents(sD_cal,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run) #static social network, everything else static
         #agent_ts[[t]] <- tibble::tibble(t=t)
       }
 

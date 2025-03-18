@@ -10,10 +10,6 @@ update_agents(
   agents_in,
   social_network,
   ignore_social = F,
-  beta. = 0.2532785,
-  lambda. = 0.105,
-  p. = 0.0085,
-  rho. = 0.35,
   cal_run
 )
 }
@@ -27,14 +23,6 @@ update_agents(
 \item{social_network}{artifical social network}
 
 \item{ignore_social}{option to ignore social effects. Default is FALSE.}
-
-\item{beta.}{financial utility scale factor}
-
-\item{lambda.}{bias (fixed in macro-calibration)}
-
-\item{p.}{speed parameter (fixed in macro-calibration)}
-
-\item{rho.}{rho_solstice}
 
 \item{cal_run}{microcalibration run index between 1 and 100}
 }
