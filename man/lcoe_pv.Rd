@@ -4,9 +4,11 @@
 \alias{lcoe_pv}
 \title{lcoe_pv}
 \usage{
-lcoe_pv(mean_daily_potential, mu)
+lcoe_pv(S, mean_daily_potential, mu)
 }
 \arguments{
+\item{S}{installed capacity}
+
 \item{mean_daily_potential}{annual average solar potentials (hours)}
 
 \item{mu}{annualised capital cost of solar per kW installed (may include grant)}
@@ -18,5 +20,5 @@ euros/kWh
 levelised cost of pvbess based on annualised system cost calculated using annualised_system_cost
 }
 \examples{
-lcoe_pv(2.5,40)
+lcoe_pv(4,2.5,40)
 }

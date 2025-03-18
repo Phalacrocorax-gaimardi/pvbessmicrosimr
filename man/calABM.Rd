@@ -4,7 +4,17 @@
 \alias{calABM}
 \title{calABM}
 \usage{
-calABM(sD, Nrun = 4, n_unused_cores = 2, use_parallel = T, beta, lambda, p, nu)
+calABM(
+  sD,
+  Nrun = 4,
+  n_unused_cores = 2,
+  use_parallel = T,
+  beta,
+  lambda,
+  p,
+  nu,
+  rho
+)
 }
 \arguments{
 \item{sD}{base scenario (historical)}
@@ -22,6 +32,8 @@ calABM(sD, Nrun = 4, n_unused_cores = 2, use_parallel = T, beta, lambda, p, nu)
 \item{p}{rate parameter default 0.085}
 
 \item{nu}{usable roof fraction for solar}
+
+\item{rho}{rho_solstice parameter}
 }
 \description{
 macro-calibration of pvbess

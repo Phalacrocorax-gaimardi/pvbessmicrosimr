@@ -304,6 +304,7 @@ energy_flows_fast <- function(S_1,S_2, aspect,shading_factor_1=1, shading_factor
 
   rho <- daylight_usage_cpp(day, rho_solstice=params$rho_solstice)
 
+
   # Create data.table
   dt <- data.table(
     day = day,
@@ -388,16 +389,17 @@ energy_flows_faster <- function(S_1, S_2, aspect, shading_factor_1 = 1, shading_
 #'
 #' levelised cost of pvbess based on annualised system cost calculated using annualised_system_cost
 #'
+#' @param S installed capacity
 #' @param mean_daily_potential annual average solar potentials (hours)
 #' @param mu annualised capital cost of solar per kW installed (may include grant)
 #'
 #' @return euros/kWh
 #' @export
 #'
-#' @examples lcoe_pv(2.5,40)
-lcoe_pv <- function(mean_daily_potential,mu){
+#' @examples lcoe_pv(4,2.5,40)
+lcoe_pv <- function(S,mean_daily_potential,mu){
 
-  annual_generation <- 365*mean_daily_potential #kWh
+  annual_generation <- S*365*mean_daily_potential #kWh
   cost_per_kWh <- mu/annual_generation
   return(cost_per_kWh)
 }

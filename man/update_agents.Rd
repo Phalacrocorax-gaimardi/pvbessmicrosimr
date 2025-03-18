@@ -13,6 +13,7 @@ update_agents(
   beta. = 0.2532785,
   lambda. = 0.105,
   p. = 0.0085,
+  rho. = 0.35,
   cal_run
 )
 }
@@ -32,6 +33,8 @@ update_agents(
 \item{lambda.}{bias (fixed in macro-calibration)}
 
 \item{p.}{speed parameter (fixed in macro-calibration)}
+
+\item{rho.}{rho_solstice}
 
 \item{cal_run}{microcalibration run index between 1 and 100}
 }
