@@ -498,8 +498,8 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
     #
   }
   isea_dates <- pv_retrofit_uptake %>% dplyr::filter(lubridate::year(date)>= 2016) %>% dplyr::pull(date) #scale of solar and census dates
-  cal <- abm %>% dplyr::filter(date %in% isea_dates) %>% dplyr::group_by(simulation,date) %>% dplyr::summarise(S=sum(S1_new+S2_new),adopted=sum(S1_new > 0 | S2_new>0,na.rm=T))
-  cal <- cal %>% dplyr::ungroup() %>% dplyr::group_by(date) %>% dplyr::summarise(MW =1.21e+3/752*mean(S), n= 1.21e+6/752*mean(adopted))
+  cal <- abm %>% dplyr::filter(date %in% isea_dates) %>% dplyr::group_by(simulation,date) %>% dplyr::summarise(S=sum(S1_new+S2_new),adopted=sum(S1_new > 0 | S2_new>0,na.rm=T),B=sum(B_new))
+  cal <- cal %>% dplyr::ungroup() %>% dplyr::group_by(date) %>% dplyr::summarise(MW =1.21e+3/752*mean(S), n= 1.21e+6/752*mean(adopted), B=1.21e+3/752*mean(B))
   tibble::tibble(beta.=beta,lambda.=lambda,p.=p,nu.=nu) %>% dplyr::bind_cols(cal) %>% return()
   #observations 2023 60,000 households 208 MW 2024 94,000 households 373 MW
 }
