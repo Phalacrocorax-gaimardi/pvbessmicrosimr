@@ -13,7 +13,8 @@ calABM(
   lambda,
   p,
   nu,
-  rho
+  rho,
+  delta
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ calABM(
 \item{nu}{usable roof fraction for solar}
 
 \item{rho}{rho_solstice parameter}
+
+\item{delta}{finance_rate calibration parameter}
 }
 \description{
 macro-calibration of pvbess

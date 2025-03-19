@@ -366,12 +366,13 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
 #' @param p rate parameter default 0.085
 #' @param nu usable roof fraction for solar
 #' @param rho rho_solstice parameter
+#' @param delta finance_rate calibration parameter
 #'
 #' @returns
 #' @export
 #'
 #' @examples
-calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu,rho){
+calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu,rho,delta){
   #
   year_zero <- 2015
   simulation_end <- 2024
@@ -383,9 +384,10 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
   sD_cal[sD_cal$parameter=="lambda.","value"] <- lambda #additional hypothetical bias correction
   sD_cal[sD_cal$parameter=="nu.","value"] <- nu #usable roof fraction for solar
   sD_cal[sD_cal$parameter=="rho_solstice","value"] <- rho
+  sD_cal[sD_cal$parameter=="finance_rate","value"] <- delta
 
   #calibration params:: MOVED TO SYSTDATA WHEN CALIBRATION COMPLETE
-  print(paste("beta.=",beta,"lambda.=",lambda,"p.=",p,"nu.=",nu,"rho_solstice=",rho))
+  print(paste("beta.=",beta,"lambda.=",lambda,"p.=",p,"nu.=",nu,"rho_solstice=",rho,"finance_rate",delta))
   seai_elec <- pvbessmicrosimr::seai_elec
   #bi-monthly runs
   Nt <- round((simulation_end-year_zero+1)*6)
@@ -492,7 +494,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
       #comment in next line for parallel
       #agent_ts
     }
-    meta <- tibble::tibble(parameter=c("Nrun","end_year","beta.","lambda.","p."),value=c(Nrun,simulation_end,beta,lambda,p))
+    meta <- tibble::tibble(parameter=c("Nrun","end_year","beta.","lambda.","p.","nu.","rho.","delta."),value=c(Nrun,simulation_end,beta,lambda,p))
     #replace "t" with dates
     abm <- abm %>% dplyr::mutate(date=lubridate::ymd(paste(year_zero,"-02-01",sep="")) %m+% months((t-1)*2)) %>% dplyr::arrange(simulation,date) %>% dplyr::select(-t)
     #
@@ -500,7 +502,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
   isea_dates <- pv_retrofit_uptake %>% dplyr::filter(lubridate::year(date)>= 2016) %>% dplyr::pull(date) #scale of solar and census dates
   cal <- abm %>% dplyr::filter(date %in% isea_dates) %>% dplyr::group_by(simulation,date) %>% dplyr::summarise(S=sum(S1_new+S2_new),adopted=sum(S1_new > 0 | S2_new>0,na.rm=T),B=sum(B_new))
   cal <- cal %>% dplyr::ungroup() %>% dplyr::group_by(date) %>% dplyr::summarise(MW =1.21e+3/752*mean(S), n= 1.21e+6/752*mean(adopted), B=1.21e+3/752*mean(B))
-  tibble::tibble(beta.=beta,lambda.=lambda,p.=p,nu.=nu) %>% dplyr::bind_cols(cal) %>% return()
+  tibble::tibble(beta.=beta,lambda.=lambda,p.=p,nu.=nu,delta.=delta) %>% dplyr::bind_cols(cal) %>% return()
   #observations 2023 60,000 households 208 MW 2024 94,000 households 373 MW
 }
 
