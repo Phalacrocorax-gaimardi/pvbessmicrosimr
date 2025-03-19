@@ -260,7 +260,7 @@ annualised_system_cost <- function(S,B,params,upgrade=FALSE){
     grant <- dplyr::if_else(S == 0 & B == 0,0,seai_grant_fast(params,S,B))
     #synergy when BESS and PV installed together
     synergy <- dplyr::if_else((S > 0) & (B > 0),params$pvbess_cost_synergy,0)
-    amort(r=params$finance_rate,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
+    amort(r=params$delta.,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
   },{
     #simple assumption: battery install cost is halved
     bess_cost <- dplyr::if_else(B > 0,params$battery_install_cost/2 + B*params$battery_cost,0)
@@ -270,7 +270,7 @@ annualised_system_cost <- function(S,B,params,upgrade=FALSE){
     grant <- 0
     #there is no synergy
     synergy <- 0
-    amort(r=params$finance_rate,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
+    amort(r=params$delta.,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
   })
 
 }
@@ -302,7 +302,7 @@ energy_flows_fast <- function(S_1,S_2, aspect,shading_factor_1=1, shading_factor
   solar_potential_1 <- shading_factor_1*solar_potential_cpp(day, params$latitude, params$K_max, params$K_min,azimuth_angle=stringr::str_split(aspect,"-")[[1]][1])
   solar_potential_2 <- shading_factor_2*solar_potential_cpp(day, params$latitude, params$K_max, params$K_min,azimuth_angle=stringr::str_split(aspect,"-")[[1]][2])
 
-  rho <- daylight_usage_cpp(day, rho_solstice=params$rho_solstice)
+  rho <- daylight_usage_cpp(day, rho_solstice=params$rho.)
 
 
   # Create data.table
@@ -356,7 +356,7 @@ energy_flows_faster <- function(S_1, S_2, aspect, shading_factor_1 = 1, shading_
   demand <- demand_fun(day, D_max, D_min, lag_D = params$lag_D)
   solar_potential_1 <- shading_factor_1 * solar_potential_fun(day, params$latitude, params$K_max, params$K_min, azimuth_angle = azimuth_angles[1])
   solar_potential_2 <- shading_factor_2 * solar_potential_fun(day, params$latitude, params$K_max, params$K_min, azimuth_angle = azimuth_angles[2])
-  rho <- daylight_usage_fun(day, rho_solstice = params$rho_solstice)
+  rho <- daylight_usage_fun(day, rho_solstice = params$rho.)
 
   # Create data.table
   dt <- data.table(day, demand, solar_potential_1, solar_potential_2, rho)

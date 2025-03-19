@@ -133,7 +133,7 @@ DataFrame energy_flows_cpp(double S_1, double S_2, std::string aspect,
   NumericVector demand = demand_cpp(day, D_max, D_min, params["lag_D"]);
   NumericVector solar_potential_1 = shading_factor_1 * solar_potential_cpp(day, params["latitude"], params["K_max"], params["K_min"], aspect.substr(0, aspect.find("-")));
   NumericVector solar_potential_2 = shading_factor_2 * solar_potential_cpp(day, params["latitude"], params["K_max"], params["K_min"], aspect.substr(aspect.find("-") + 1));
-  NumericVector rho = daylight_usage_cpp(day, params["rho_solstice"]);
+  NumericVector rho = daylight_usage_cpp(day, params["rho."]);
 
   // Initialize variables to store results
   NumericVector d_tilde(day.size());

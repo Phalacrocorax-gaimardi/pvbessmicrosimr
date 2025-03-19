@@ -231,8 +231,10 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
   lambda <- sD %>% dplyr::filter(parameter=="lambda.") %>% dplyr::pull(value)
   beta <- sD %>% dplyr::filter(parameter=="beta.") %>% dplyr::pull(value)
   nu <- sD %>% dplyr::filter(parameter=="nu.") %>% dplyr::pull(value)
+  rho <- sD %>% dplyr::filter(parameter=="rho_solstice") %>% dplyr::pull(value)
+  delta <- sD %>% dplyr::filter(parameter=="finance_rate_2022") %>% dplyr::pull(value)
 
-  print(paste("p.=",p,"lambda=",lambda,"beta.=",beta))
+  print(paste("beta.=",beta,"lambda=",lambda,"p.=",p,"usable roof fraction =",nu,"rho_solstice",rho, "discount_rate=",delta))
   seai_elec <- pvbessmicrosimr::seai_elec
   #bi-monthly runs
   Nt <- round((simulation_end-year_zero+1)*6)
@@ -263,7 +265,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       #choose segments
       microcal_run <- sample(1:100,1)
       agents_in <- initialise_agents(sD,year_zero,microcal_run)
-      u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==micro_cal_run) %>% dplyr::select(-calibration)
+      u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==microcal_run) %>% dplyr::select(-calibration)
       #no transactions
       agents_in$transaction <- FALSE
       agent_ts<- vector("list",Nt)
@@ -316,7 +318,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       #randomise ICEV emissions assignment
       #choose market segment for each agent
       microcal_run <- sample(1:100,1)
-      u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==micro_cal_run) %>% dplyr::select(-calibration)
+      u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration==microcal_run) %>% dplyr::select(-calibration)
       agents_in <- initialise_agents(sD,year_zero,microcal_run)
       #no transactions
       agents_in$transaction <- FALSE
@@ -341,9 +343,11 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       #comment in next line for parallel
       #agent_ts
     }
+
     meta <- tibble::tibble(parameter=c("Nrun","end_year","beta.","lambda.","p."),value=c(Nrun,simulation_end,beta,lambda,p))
     #replace "t" with dates
     abm <- abm %>% dplyr::mutate(date=lubridate::ymd(paste(year_zero,"-02-01",sep="")) %m+% months((t-1)*2)) %>% dplyr::arrange(simulation,date) %>% dplyr::select(-t)
+    closeAllConnections()
     return(list("abm"=abm,"scenario"=sD,"system"=meta))
   }
 
@@ -383,11 +387,11 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
   sD_cal[sD_cal$parameter=="beta.","value"] <- beta #financial partial utility scale
   sD_cal[sD_cal$parameter=="lambda.","value"] <- lambda #additional hypothetical bias correction
   sD_cal[sD_cal$parameter=="nu.","value"] <- nu #usable roof fraction for solar
-  sD_cal[sD_cal$parameter=="rho_solstice","value"] <- rho
-  sD_cal[sD_cal$parameter=="finance_rate","value"] <- delta
+  sD_cal[sD_cal$parameter=="rho.","value"] <- rho
+  sD_cal[sD_cal$parameter=="delta.","value"] <- delta
 
   #calibration params:: MOVED TO SYSTDATA WHEN CALIBRATION COMPLETE
-  print(paste("beta.=",beta,"lambda.=",lambda,"p.=",p,"nu.=",nu,"rho_solstice=",rho,"finance_rate",delta))
+  print(paste("beta.=",beta,"lambda.=",lambda,"p.=",p,"nu.=",nu,"rho.=",rho,"delta.",delta))
   seai_elec <- pvbessmicrosimr::seai_elec
   #bi-monthly runs
   Nt <- round((simulation_end-year_zero+1)*6)
@@ -502,7 +506,8 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
   isea_dates <- pv_retrofit_uptake %>% dplyr::filter(lubridate::year(date)>= 2016) %>% dplyr::pull(date) #scale of solar and census dates
   cal <- abm %>% dplyr::filter(date %in% isea_dates) %>% dplyr::group_by(simulation,date) %>% dplyr::summarise(S=sum(S1_new+S2_new),adopted=sum(S1_new > 0 | S2_new>0,na.rm=T),B=sum(B_new))
   cal <- cal %>% dplyr::ungroup() %>% dplyr::group_by(date) %>% dplyr::summarise(MW =1.21e+3/752*mean(S), n= 1.21e+6/752*mean(adopted), B=1.21e+3/752*mean(B))
-  tibble::tibble(beta.=beta,lambda.=lambda,p.=p,nu.=nu,delta.=delta) %>% dplyr::bind_cols(cal) %>% return()
+  closeAllConnections()
+  tibble::tibble(beta.=beta,lambda.=lambda,p.=p,nu.=nu,rho.=rho,delta.=delta) %>% dplyr::bind_cols(cal) %>% return()
   #observations 2023 60,000 households 208 MW 2024 94,000 households 373 MW
 }
 
