@@ -231,10 +231,10 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
   lambda <- sD %>% dplyr::filter(parameter=="lambda.") %>% dplyr::pull(value)
   beta <- sD %>% dplyr::filter(parameter=="beta.") %>% dplyr::pull(value)
   nu <- sD %>% dplyr::filter(parameter=="nu.") %>% dplyr::pull(value)
-  rho <- sD %>% dplyr::filter(parameter=="rho_solstice") %>% dplyr::pull(value)
-  delta <- sD %>% dplyr::filter(parameter=="finance_rate_2022") %>% dplyr::pull(value)
+  rho <- sD %>% dplyr::filter(parameter=="rho.") %>% dplyr::pull(value)
+  delta <- sD %>% dplyr::filter(parameter=="delta.") %>% dplyr::pull(value)
 
-  print(paste("beta.=",beta,"lambda=",lambda,"p.=",p,"usable roof fraction =",nu,"rho_solstice",rho, "discount_rate=",delta))
+  print(paste("finanncial utility scale (beta.)=",beta,"p.=",p,"usable roof fraction (nu.) =",nu,"rho_solstice (rho.)",rho, "discount_rate (delta.)=",delta))
   seai_elec <- pvbessmicrosimr::seai_elec
   #bi-monthly runs
   Nt <- round((simulation_end-year_zero+1)*6)
