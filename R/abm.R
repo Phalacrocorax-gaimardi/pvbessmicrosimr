@@ -107,7 +107,8 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
   #potential first adopters
 
   b_s <- b_s %>% dplyr::rowwise() %>% dplyr::mutate(result = list(pvbess_optim_upgrade(S1_old,S2_old,B_old,capex_old,aspect,area_1*params$kWp_per_m2,area_2*params$kWp_per_m2,
-                                                                                       shading1,shading2,D_max,D_min,params,tariff_plan="night_saver"))) %>% tidyr::unnest_wider(result)
+                                                                                 shading1,shading2,D_max,D_min,params,tariff_plan="night_saver"))) %>% tidyr::unnest_wider(result)
+
   #identify any potential upgrades
   b_s <- b_s %>% dplyr::mutate(is_upgrade = !(S1_old==0 & S2_old==0 & B_old ==0) )
 
@@ -121,26 +122,26 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
   b_s <- b_s %>% dplyr::rowwise() %>% dplyr::mutate(savings = (capex_new+opex_new-cost_old)/cost_old)
   #
   b_s <- b_s %>% dplyr::mutate(du_fin = -params$beta.*w_q14*savings)
-  b_s <- b_s %>% dplyr::mutate(du_social = dplyr::if_else(is_upgrade,0,w_q45*du_social[q45]))
-  b_s <- b_s %>% dplyr::mutate(du_theta = dplyr::if_else(is_upgrade,0,w_theta*theta))
+  b_s <- b_s %>% dplyr::mutate(du_social = ifelse(is_upgrade,0,w_q45*du_social[q45]))
+  b_s <- b_s %>% dplyr::mutate(du_theta = ifelse(is_upgrade,0,w_theta*theta))
   #sum and inude hypothetical bias correction
   b_s <- b_s %>% dplyr::mutate(du_tot = du_fin+du_social+du_theta + params$lambda.)
   #
   #identify transactions
-  b_s <- b_s %>% dplyr::mutate(transaction = dplyr::if_else(du_tot > 0,TRUE,FALSE))
+  b_s <- b_s %>% dplyr::mutate(transaction = ifelse(du_tot > 0,TRUE,FALSE))
   #identify upgrades
-  b_s <- b_s %>% dplyr::mutate(is_upgrade = dplyr::if_else(du_tot > 0 & is_upgrade,TRUE,FALSE))
+  b_s <- b_s %>% dplyr::mutate(is_upgrade = ifelse(du_tot > 0 & is_upgrade,TRUE,FALSE))
   #reject updates that did not occur
-  b_s <- b_s %>% dplyr::mutate(dS_1 = dplyr::if_else(transaction, dS_1, 0))
-  b_s <- b_s %>% dplyr::mutate(dS_2 = dplyr::if_else(transaction, dS_2, 0))
-  b_s <- b_s %>% dplyr::mutate(dB = dplyr::if_else(transaction, dB, 0))
+  b_s <- b_s %>% dplyr::mutate(dS_1 = ifelse(transaction, dS_1, 0))
+  b_s <- b_s %>% dplyr::mutate(dS_2 = ifelse(transaction, dS_2, 0))
+  b_s <- b_s %>% dplyr::mutate(dB = ifelse(transaction, dB, 0))
   #update areas for agents who transacted
   if(dim(b_s %>% dplyr::filter(transaction))[1] == 0) {
     print(paste("time", round(yeartime,1), "no PV-BESS adopters"))
     #print(paste("PV system augmenters because selected roofs already at capacity"))
   }
-  b_s <- b_s %>% dplyr::mutate(area_1 = dplyr::if_else(transaction,area_1 - dS_1/kWpm2, area_1))
-  b_s <- b_s %>% dplyr::mutate(area_2 = dplyr::if_else(transaction,area_2 - dS_2/kWpm2, area_2))
+  b_s <- b_s %>% dplyr::mutate(area_1 = ifelse(transaction,area_1 - dS_1/kWpm2, area_1))
+  b_s <- b_s %>% dplyr::mutate(area_2 = ifelse(transaction,area_2 - dS_2/kWpm2, area_2))
 
 
   #remove unwanted columns and replace S1_old+dS_1 by S1_new etc
@@ -234,7 +235,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
   rho <- sD %>% dplyr::filter(parameter=="rho.") %>% dplyr::pull(value)
   delta <- sD %>% dplyr::filter(parameter=="delta.") %>% dplyr::pull(value)
 
-  print(paste("finanncial utility scale (beta.)=",beta,"p.=",p,"usable roof fraction (nu.) =",nu,"rho_solstice (rho.)",rho, "discount_rate (delta.)=",delta))
+  print(paste("financial utility scale (beta.)=",beta,"p.=",p,"usable roof fraction (nu.) =",nu,"rho_solstice (rho.)",rho, "discount_rate (delta.)=",delta))
   seai_elec <- pvbessmicrosimr::seai_elec
   #bi-monthly runs
   Nt <- round((simulation_end-year_zero+1)*6)
@@ -288,7 +289,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       agent_ts
     }
 
-    meta <- tibble::tibble(parameter=c("Nrun","end_year","beta.","lambda.","p."),value=c(Nrun,simulation_end,beta,lambda,p))
+    meta <- tibble::tibble(parameter=c("Nrun","end_year","beta.","p.","nu.","rho.","delta."),value=c(Nrun,simulation_end,beta,p,nu,rho,delta))
     abm <- abm %>% dplyr::mutate(date=lubridate::ymd(paste(year_zero,"-02-01",sep="")) %m+% months((t-1)*2)) %>% dplyr::arrange(simulation,date) %>% dplyr::select(-t)
     return(list("abm"=abm,"scenario"=sD,"system"=meta))
   }
@@ -407,7 +408,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
     cl <- parallel::makeCluster(number_of_cores)
     doParallel::registerDoParallel(cl)
 
-    abm <- foreach::foreach(j = 1:Nrun, .packages = "dplyr", .final = function(x) { parallel::stopCluster(cl); x },.combine=dplyr::bind_rows,.export = c("initialise_agents","update_agents","make_artificial_society","pvbess_opex_cost_fun","pvbess_optim_upgrade","pvbess_optim_complex")) %dopar% {
+    abm <- foreach::foreach(j = 1:Nrun, .packages = "dplyr", .final = function(x) { parallel::stopCluster(cl); x },.combine=dplyr::bind_rows,.export = c("initialise_agents","update_agents","make_artificial_society","pvbess_opex_cost_fun","pvbess_optim_upgrade","pvbess_optim_complex","seai_grant_fast","annualised_system_cost")) %dopar% {
       #abm <- foreach::foreach(j = 1:Nrun, .errorhandling = "pass",.export = c("initialise_agents","update_agents4")) %dopar% {
 
       #create a new artificial society for each run
@@ -434,7 +435,8 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
         #bi-monthly
         yeartime <- year_zero+(t-1)/6
         agent_ts[[t]] <- update_agents(sD_cal,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run) #static social network, everything else static
-      }
+        #agent_ts[[t]] <- tibble::tibble(t=t)
+        }
 
       for(t in 1:Nt) agent_ts[[t]]$t <- t
       agent_ts <- tibble::as_tibble(data.table::rbindlist(agent_ts,fill=T))
@@ -513,3 +515,121 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
 
 
 
+
+
+
+#' calABM2
+#'
+#' macro-calibration of pvbess using mclapply for linux systems
+#'
+#' return uptake (number of households and installed capacity) in june 2023 and 2024 for comparison with ISEA reports
+#'
+#' @param sD base scenario (historical)
+#' @param Nrun number of runs
+#' @param n_unused_cores unsued cores default 2
+#' @param use_parallel TRUE or FALSE
+#' @param beta financial utility scale (drawn from financial_utility_scale)
+#' @param lambda bias correction parameter
+#' @param p rate parameter default 0.085
+#' @param nu usable roof fraction for solar
+#' @param rho rho_solstice parameter
+#' @param delta finance_rate calibration parameter
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+
+calABM2 <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu,rho,delta){
+  #
+  year_zero <- 2015
+  simulation_end <- 2024
+  resample_society=F
+  ignore_social=F
+  #the calibration parameters
+  sD_cal <- sD
+  sD_cal[sD_cal$parameter=="beta.","value"] <- beta #financial partial utility scale
+  sD_cal[sD_cal$parameter=="lambda.","value"] <- lambda #additional hypothetical bias correction
+  sD_cal[sD_cal$parameter=="nu.","value"] <- nu #usable roof fraction for solar
+  sD_cal[sD_cal$parameter=="rho.","value"] <- rho
+  sD_cal[sD_cal$parameter=="delta.","value"] <- delta
+
+  #calibration params:: MOVED TO SYSTDATA WHEN CALIBRATION COMPLETE
+  print(paste("beta.=",beta,"lambda.=",lambda,"p.=",p,"nu.=",nu,"rho.=",rho,"delta.",delta))
+  seai_elec <- pvbessmicrosimr::seai_elec
+  #bi-monthly runs
+  Nt <- round((simulation_end-year_zero+1)*6)
+
+
+# Define the function to run in parallel
+run_simulation <- function(j) {
+  # Create a new artificial society for each run
+  print(paste("Generating network for run", j, "...."))
+
+  if (!resample_society) {
+    social <- make_artificial_society(pvbessmicrosimr::pv_society_oo, pvbessmicrosimr::homophily, 5)
+  } else {
+    agent_resample <- sample(1:dim(pvbessmicrosimr::pv_society_oo)[1], replace = TRUE)
+    society_new <- society[agent_resample, ]
+    society_new$ID <- 1:dim(pvbessmicrosimr::pv_society_oo)[1]
+    social <- make_artificial_society(society_new, pvbessmicrosimr::homophily, 4.5)
+  }
+
+  # Randomize ICEV emissions assignment
+  microcal_run <- sample(1:100, 1)
+  u_empirical <- empirical_utils_oo %>% dplyr::filter(calibration == microcal_run) %>% dplyr::select(-calibration)
+
+  agents_in <- initialise_agents(sD_cal, year_zero, microcal_run)
+  agents_in$transaction <- FALSE
+
+  agent_ts <- vector("list", Nt)
+  agent_ts[[1]] <- agents_in  # Agent parameters with regularized weights
+
+  for (t in seq(2, Nt)) {
+    # Bi-monthly
+    yeartime <- year_zero + (t - 1) / 6
+    agent_ts[[t]] <- update_agents(sD_cal, yeartime, agent_ts[[t - 1]], social_network = social, ignore_social, cal_run = microcal_run)
+  }
+
+  for (t in 1:Nt) agent_ts[[t]]$t <- t
+  agent_ts <- tibble::as_tibble(data.table::rbindlist(agent_ts, fill = TRUE))
+  agent_ts$simulation <- j
+
+  # Add vertex degree
+  degrees <- tibble::tibble(ID = 1:dim(pvbessmicrosimr::pv_society_oo)[1], degree = igraph::degree(social))
+  agent_ts <- agent_ts %>% dplyr::inner_join(degrees, by = "ID")
+
+  return(agent_ts)
+}
+
+# Main parallel execution
+  number_of_cores <- parallel::detectCores() - n_unused_cores
+
+  # Run simulations in parallel using mclapply
+  abm_list <- mclapply(1:Nrun, run_simulation, mc.cores = number_of_cores)
+  closeAllConnections()
+  # Combine results into a single tibble
+  abm <- dplyr::bind_rows(abm_list)
+
+  # Add metadata
+  meta <- tibble::tibble(
+    parameter = c("Nrun", "end_year", "beta.", "lambda.", "p."),
+    value = c(Nrun, simulation_end, beta, lambda, p)
+  )
+
+  # Process the final ABM data
+  abm <- abm %>%
+    dplyr::mutate(date = lubridate::ymd(paste(year_zero, "-02-01", sep = "")) %m+% months((t - 1) * 2)) %>%
+    dplyr::arrange(simulation, date) %>%
+    dplyr::select(-t)
+
+  # Return the results (optional)
+  # return(list("abm" = abm, "scenario" = sD, "system" = meta))
+
+isea_dates <- pv_retrofit_uptake %>% dplyr::filter(lubridate::year(date)>= 2016) %>% dplyr::pull(date) #scale of solar and census dates
+cal <- abm %>% dplyr::filter(date %in% isea_dates) %>% dplyr::group_by(simulation,date) %>% dplyr::summarise(S=sum(S1_new+S2_new),adopted=sum(S1_new > 0 | S2_new>0,na.rm=T),B=sum(B_new))
+cal <- cal %>% dplyr::ungroup() %>% dplyr::group_by(date) %>% dplyr::summarise(MW =1.21e+3/752*mean(S), n= 1.21e+6/752*mean(adopted), B=1.21e+3/752*mean(B))
+closeAllConnections()
+tibble::tibble(beta.=beta,lambda.=lambda,p.=p,nu.=nu,rho.=rho,delta.=delta) %>% dplyr::bind_cols(cal) %>% return()
+#observations 2023 60,000 households 208 MW 2024 94,000 households 373 MW
+}

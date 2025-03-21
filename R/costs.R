@@ -278,13 +278,14 @@ finance_rate_fun <- function(sD,yeartime){
 #' @examples
 fit_fun <- function(sD,yeartime){
 
-  cost_2015 <- 0 #add more costs here if known
+  fit_2015 <- 0 #add more costs here if known
 
-  cost_2022 <- sD %>% dplyr::filter(parameter=="fit_2022") %>% dplyr::pull(value)
-  cost_2030 <- sD %>% dplyr::filter(parameter=="fit_2030") %>% dplyr::pull(value)
-  cost_2050 <- sD %>% dplyr::filter(parameter=="fit_2050") %>% dplyr::pull(value)
-  cost <- approx(x=c(2015.5,2022.5,2022.6,2030.5,2050.5), y=c(0,0,cost_2022,cost_2030,cost_2050),xout=yeartime,rule=2)$y
-  return(cost)
+  fit_2022 <- sD %>% dplyr::filter(parameter=="fit_2022") %>% dplyr::pull(value)
+  fit_2025 <- sD %>% dplyr::filter(parameter=="fit_2025") %>% dplyr::pull(value)
+  fit_2030 <- sD %>% dplyr::filter(parameter=="fit_2030") %>% dplyr::pull(value)
+  fit_2050 <- sD %>% dplyr::filter(parameter=="fit_2050") %>% dplyr::pull(value)
+  fit <- approx(x=c(2015.5,2022.5,2025.5,2030.5,2050.5), y=c(0,fit_2022,fit_2025,fit_2030,fit_2050),xout=yeartime,rule=2)$y
+  return(fit)
 }
 
 
@@ -392,7 +393,7 @@ seai_grant <- function(params,s,b){
   sol_upper_threshold <- params$sol_upper_threshold
   sol_lower_grant <- params$sol_lower_grant
   sol_upper_grant <- params$sol_upper_grant
-  bat_threshold <- params$bat_threshold
+  bat_threshold <- params$bess_threshold
   bat_grant <- params$bat_grant
 
   max_sol_grant <- sol_lower_threshold*sol_lower_grant + (sol_upper_threshold-sol_lower_threshold)*sol_upper_grant
@@ -426,20 +427,17 @@ seai_grant_fast <- function (params, s, b) {
   sol_upper_threshold <- params$sol_upper_threshold
   sol_lower_grant <- params$sol_lower_grant
   sol_upper_grant <- params$sol_upper_grant
-  bat_threshold <- params$bat_threshold
-  bat_grant <- params$bat_grant
   max_sol_grant <- sol_lower_threshold * sol_lower_grant + (sol_upper_threshold - sol_lower_threshold) * sol_upper_grant
 
-  grant <- ifelse(s <= sol_lower_threshold, sol_lower_grant * s,
-                  ifelse(s >= sol_upper_threshold & b < bat_threshold, max_sol_grant,
-                         ifelse(s >= sol_upper_threshold & b >= bat_threshold,max_sol_grant + bat_grant,
-                                ifelse((s > sol_lower_threshold) & (s < sol_upper_threshold), sol_lower_threshold * sol_lower_grant + (s - sol_lower_threshold) * sol_upper_grant,NA
-                                ))))
+  pv_grant <- ifelse(s <= sol_lower_threshold, sol_lower_grant * s,
+                  ifelse(s > sol_upper_threshold, max_sol_grant, sol_lower_threshold * sol_lower_grant + (s - sol_lower_threshold) * sol_upper_grant))
 
+  pv_grant <- ifelse((params$yeartime >= params$grant_introduction_date) & (params$yeartime <= params$pv_grant_removal_date),pv_grant,0)
 
-  grant <- ifelse((params$yeartime >= params$grant_introduction_date) & (params$yeartime <= params$grant_removal_date),grant,0)
+  bess_grant <- ifelse(b >= params$bess_threshold, params$bess_grant,0)
+  bess_grant <- ifelse((params$yeartime >= params$grant_introduction_date) & (params$yeartime <= params$bess_grant_removal_date),bess_grant,0)
 
-  return(grant)
+  return(pv_grant+bess_grant)
 }
 
 
@@ -543,8 +541,8 @@ survey_bills_to_kwh <- function(pv_data_in, lag_D=30){
   complete_data <- complete_data %>% dplyr::bind_rows(missing_low_data,missing_high_data,missing_both_data) %>% dplyr::select(-a,-b)
   complete_data <- complete_data %>% dplyr::arrange(ID)
   #flip bills of miscreants where highest_bill < lowest_bill
-  complete_data <- complete_data %>% dplyr::mutate(temp_high= dplyr::if_else(lowest_bill > highest_bill, lowest_bill,highest_bill))
-  complete_data <- complete_data %>% dplyr::mutate(temp_low = dplyr::if_else(lowest_bill > highest_bill, highest_bill,lowest_bill))
+  complete_data <- complete_data %>% dplyr::mutate(temp_high= ifelse(lowest_bill > highest_bill, lowest_bill,highest_bill))
+  complete_data <- complete_data %>% dplyr::mutate(temp_low = ifelse(lowest_bill > highest_bill, highest_bill,lowest_bill))
   complete_data <- complete_data %>% dplyr::select(-highest_bill,-lowest_bill) %>% dplyr::rename("highest_bill" = temp_high, "lowest_bill" = temp_low)
 
   e_price_2023 <- seai_elec %>% dplyr::filter(year==2023) %>% dplyr::pull(price)/100*1.15 #15% correction for credits

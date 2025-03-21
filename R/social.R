@@ -17,7 +17,7 @@ make_artificial_society <- function(society=society,homophily=homophily,nu=4.5){
   #social distance measure=gower distance
   #nu gives the social distance decay exponentlarger mu higher assortativity
   #agents with degree zero remain degree zero but there may be additional nodes with degree zero
-  society <- society %>% dplyr::mutate(degree = dplyr::if_else(is.na(degree), sample(c(0,1:5,15,25),size=1,prob = c(0.51016949,0.03389831,0.10338983,0.09322034,0.08644068,0.09152542,0.06101695,0.02033898)),degree))
+  society <- society %>% dplyr::mutate(degree = ifelse(is.na(degree), sample(c(0,1:5,15,25),size=1,prob = c(0.51016949,0.03389831,0.10338983,0.09322034,0.08644068,0.09152542,0.06101695,0.02033898)),degree))
   society_factor <- unclass(society %>% dplyr::mutate_if(is.character,as.factor)) %>% as.data.frame()
   society_factor1 <- dplyr::filter(society_factor,degree != 0)
   society1 <- dplyr::filter(society, degree != 0)
