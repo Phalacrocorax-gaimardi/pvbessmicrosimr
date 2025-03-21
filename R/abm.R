@@ -606,7 +606,7 @@ run_simulation <- function(j) {
   number_of_cores <- parallel::detectCores() - n_unused_cores
 
   # Run simulations in parallel using mclapply
-  abm_list <- mclapply(1:Nrun, run_simulation, mc.cores = number_of_cores)
+  abm_list <- parallel::mclapply(1:Nrun, run_simulation, mc.cores = number_of_cores)
   closeAllConnections()
   # Combine results into a single tibble
   abm <- dplyr::bind_rows(abm_list)
