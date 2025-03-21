@@ -122,26 +122,26 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
   b_s <- b_s %>% dplyr::rowwise() %>% dplyr::mutate(savings = (capex_new+opex_new-cost_old)/cost_old)
   #
   b_s <- b_s %>% dplyr::mutate(du_fin = -params$beta.*w_q14*savings)
-  b_s <- b_s %>% dplyr::mutate(du_social = ifelse(is_upgrade,0,w_q45*du_social[q45]))
-  b_s <- b_s %>% dplyr::mutate(du_theta = ifelse(is_upgrade,0,w_theta*theta))
+  b_s <- b_s %>% dplyr::mutate(du_social = dplyr::if_else(is_upgrade,0,w_q45*du_social[q45]))
+  b_s <- b_s %>% dplyr::mutate(du_theta = dplyr::if_else(is_upgrade,0,w_theta*theta))
   #sum and inude hypothetical bias correction
   b_s <- b_s %>% dplyr::mutate(du_tot = du_fin+du_social+du_theta + params$lambda.)
   #
   #identify transactions
-  b_s <- b_s %>% dplyr::mutate(transaction = ifelse(du_tot > 0,TRUE,FALSE))
+  b_s <- b_s %>% dplyr::mutate(transaction = dplyr::if_else(du_tot > 0,TRUE,FALSE))
   #identify upgrades
-  b_s <- b_s %>% dplyr::mutate(is_upgrade = ifelse(du_tot > 0 & is_upgrade,TRUE,FALSE))
+  b_s <- b_s %>% dplyr::mutate(is_upgrade = dplyr::if_else(du_tot > 0 & is_upgrade,TRUE,FALSE))
   #reject updates that did not occur
-  b_s <- b_s %>% dplyr::mutate(dS_1 = ifelse(transaction, dS_1, 0))
-  b_s <- b_s %>% dplyr::mutate(dS_2 = ifelse(transaction, dS_2, 0))
-  b_s <- b_s %>% dplyr::mutate(dB = ifelse(transaction, dB, 0))
+  b_s <- b_s %>% dplyr::mutate(dS_1 = dplyr::if_else(transaction, dS_1, 0))
+  b_s <- b_s %>% dplyr::mutate(dS_2 = dplyr::if_else(transaction, dS_2, 0))
+  b_s <- b_s %>% dplyr::mutate(dB = dplyr::if_else(transaction, dB, 0))
   #update areas for agents who transacted
   if(dim(b_s %>% dplyr::filter(transaction))[1] == 0) {
     print(paste("time", round(yeartime,1), "no PV-BESS adopters"))
     #print(paste("PV system augmenters because selected roofs already at capacity"))
   }
-  b_s <- b_s %>% dplyr::mutate(area_1 = ifelse(transaction,area_1 - dS_1/kWpm2, area_1))
-  b_s <- b_s %>% dplyr::mutate(area_2 = ifelse(transaction,area_2 - dS_2/kWpm2, area_2))
+  b_s <- b_s %>% dplyr::mutate(area_1 = dplyr::if_else(transaction,area_1 - dS_1/kWpm2, area_1))
+  b_s <- b_s %>% dplyr::mutate(area_2 = dplyr::if_else(transaction,area_2 - dS_2/kWpm2, area_2))
 
 
   #remove unwanted columns and replace S1_old+dS_1 by S1_new etc

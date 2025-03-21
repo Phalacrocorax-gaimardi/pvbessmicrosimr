@@ -108,7 +108,7 @@ fast_params <- function(params_long){
 #' @export
 gen_roofsection_solar_area <- function (region=1,house_type=1,stories=1,bedrooms=2,house_period=6, roof_floor_ratio = 2/sqrt(3), usable_roof_fraction = 0.7) {
   #
-  house_period <- ifelse(house_period==7,sample(c(1,2,3),1),house_period) #don't knows are likely to be older houses
+  house_period <- dplyr::if_else(house_period==7,sample(c(1,2,3),1),house_period) #don't knows are likely to be older houses
 
   q1_0 <- pv_qanda %>% dplyr::filter(question_code=="q1",response_code==house_type) %>% dplyr::pull(response)
   qc2_0 <- pv_qanda %>% dplyr::filter(question_code=="qc2",response_code==region) %>% dplyr::pull(response)
