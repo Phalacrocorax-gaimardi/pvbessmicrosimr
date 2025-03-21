@@ -421,23 +421,30 @@ seai_grant <- function(params,s,b){
 #' @export
 #'
 #' @examples
-seai_grant_fast <- function (params, s, b) {
-
+seai_grant_fast <- function(params, s, b) {
+  # Extract parameters
   sol_lower_threshold <- params$sol_lower_threshold
   sol_upper_threshold <- params$sol_upper_threshold
   sol_lower_grant <- params$sol_lower_grant
   sol_upper_grant <- params$sol_upper_grant
   max_sol_grant <- sol_lower_threshold * sol_lower_grant + (sol_upper_threshold - sol_lower_threshold) * sol_upper_grant
 
-  pv_grant <- dplyr::if_else(s <= sol_lower_threshold, sol_lower_grant * s,
-                  dplyr::if_else(s > sol_upper_threshold, max_sol_grant, sol_lower_threshold * sol_lower_grant + (s - sol_lower_threshold) * sol_upper_grant))
+  # Precompute time-based conditions
+  is_grant_active_pv <- (params$yeartime >= params$grant_introduction_date) & (params$yeartime <= params$pv_grant_removal_date)
+  is_grant_active_bess <- (params$yeartime >= params$grant_introduction_date) & (params$yeartime <= params$bess_grant_removal_date)
 
-  pv_grant <- dplyr::if_else((params$yeartime >= params$grant_introduction_date) & (params$yeartime <= params$pv_grant_removal_date),pv_grant,0)
+  # Calculate PV grant using vectorized operations
+  pv_grant <- ifelse(s <= sol_lower_threshold, sol_lower_grant * s,
+                     ifelse(s > sol_upper_threshold, max_sol_grant,
+                            sol_lower_threshold * sol_lower_grant + (s - sol_lower_threshold) * sol_upper_grant))
+  pv_grant <- pv_grant * is_grant_active_pv  # Apply time-based condition
 
-  bess_grant <- dplyr::if_else(b >= params$bess_threshold, params$bess_grant,0)
-  bess_grant <- dplyr::if_else((params$yeartime >= params$grant_introduction_date) & (params$yeartime <= params$bess_grant_removal_date),bess_grant,0)
+  # Calculate BESS grant using vectorized operations
+  bess_grant <- ifelse(b >= params$bess_threshold, params$bess_grant, 0)
+  bess_grant <- bess_grant * is_grant_active_bess  # Apply time-based condition
 
-  return(pv_grant+bess_grant)
+  # Return the total grant
+  return(pv_grant + bess_grant)
 }
 
 
