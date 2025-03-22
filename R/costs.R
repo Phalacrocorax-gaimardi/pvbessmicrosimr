@@ -150,7 +150,7 @@ day_tariff_fun <- function(sD,yeartime){
 
 #' night_tariff_fun
 #'
-#' actual (currenly to mid 2023) and projected path of electricity prices. Data from seai_elec. For inflation expectations see electricity_price_inflation_fun.
+#' Night tariffs. Historical rates are assumed to be 45% of the day rate
 #'
 #' @param sD scenario dataframe
 #' @param yeartime decimal time
@@ -161,12 +161,12 @@ day_tariff_fun <- function(sD,yeartime){
 #' @examples
 night_tariff_fun <- function(sD,yeartime){
 
-  #seai_elec1 <- seai_elec %>% dplyr::filter(year >=2008) #add more costs here if known
+  seai_elec1 <- seai_elec %>% dplyr::filter(year >=2008) #add more costs here if known
   cost_2022 <- sD %>% dplyr::filter(parameter=="night_tariff_2022") %>% dplyr::pull(value)
   cost_2025 <- sD %>% dplyr::filter(parameter=="night_tariff_2025") %>% dplyr::pull(value)
   cost_2030 <- sD %>% dplyr::filter(parameter=="night_tariff_2030") %>% dplyr::pull(value)
   cost_2050 <- sD %>% dplyr::filter(parameter=="night_tariff_2050") %>% dplyr::pull(value)
-  cost <- approx(x=c(2022.5,2025.5,2030.5,2050.5), y=c(cost_2022,cost_2025,cost_2030,cost_2050),xout=yeartime,rule=2)$y
+  cost <- approx(x=c(seai_elec1$year+0.5,2025.5,2030.5,2050.5), y=c(0.45*seai_elec1$price/100,cost_2025,cost_2030,cost_2050),xout=yeartime,rule=2)$y
   return(cost)
 }
 

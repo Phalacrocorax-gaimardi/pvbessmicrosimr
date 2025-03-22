@@ -15,5 +15,5 @@ night_tariff_fun(sD, yeartime)
 price per kWh in euros
 }
 \description{
-actual (currenly to mid 2023) and projected path of electricity prices. Data from seai_elec. For inflation expectations see electricity_price_inflation_fun.
+Night tariffs. Historical rates are assumed to be 45% of the day rate
 }
