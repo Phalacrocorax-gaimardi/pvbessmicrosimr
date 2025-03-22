@@ -278,13 +278,11 @@ finance_rate_fun <- function(sD,yeartime){
 #' @examples
 fit_fun <- function(sD,yeartime){
 
-  fit_2015 <- 0 #add more costs here if known
-
   fit_2022 <- sD %>% dplyr::filter(parameter=="fit_2022") %>% dplyr::pull(value)
   fit_2025 <- sD %>% dplyr::filter(parameter=="fit_2025") %>% dplyr::pull(value)
   fit_2030 <- sD %>% dplyr::filter(parameter=="fit_2030") %>% dplyr::pull(value)
   fit_2050 <- sD %>% dplyr::filter(parameter=="fit_2050") %>% dplyr::pull(value)
-  fit <- approx(x=c(2015.5,2022.5,2025.5,2030.5,2050.5), y=c(0,fit_2022,fit_2025,fit_2030,fit_2050),xout=yeartime,rule=2)$y
+  fit <- approx(x=c(2022.5,2025.5,2030.5,2050.5), y=c(fit_2022,fit_2025,fit_2030,fit_2050),xout=yeartime,rule=2,yleft=0)$y
   return(fit)
 }
 
