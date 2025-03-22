@@ -367,16 +367,20 @@ lcoe_pv <- function(S,mean_daily_potential,mu){
 
 #' lcos_bess
 #'
+#' levelised cost of storage
 #'
-#' @param lambda annualised cost of 1kWh storage
+#' This is function of B
+#'
+#' @param B bess capacity (kWh)
+#' @param lambda annualised cost (B kWh)
 #'
 #' @return
 #' @export
 #'
 #' @examples
-lcos_bess <- function(lambda){
+lcos_bess <- function(B,lambda){
 
-  annual_storage <- 365 #annual kWh stored by 1kWh battery
+  annual_storage <- B*365 #annual kWh stored by B kWh battery charged daily
   cost_per_kWh <- lambda/annual_storage #euro/kWh
   return(cost_per_kWh)
 }

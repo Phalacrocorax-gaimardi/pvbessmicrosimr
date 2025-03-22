@@ -4,11 +4,16 @@
 \alias{lcos_bess}
 \title{lcos_bess}
 \usage{
-lcos_bess(lambda)
+lcos_bess(B, lambda)
 }
 \arguments{
-\item{lambda}{annualised cost of 1kWh storage}
+\item{B}{bess capacity (kWh)}
+
+\item{lambda}{annualised cost (B kWh)}
 }
 \description{
-lcos_bess
+levelised cost of storage
+}
+\details{
+This is function of B
 }
