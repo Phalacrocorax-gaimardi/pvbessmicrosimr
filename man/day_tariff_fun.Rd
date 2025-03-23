@@ -17,3 +17,6 @@ price per kWh in euros
 \description{
 actual (currenly to mid 2023) and projected path of electricity prices. Data from seai_elec. For inflation expectations see electricity_price_inflation_fun.
 }
+\examples{
+day_tariff_fun(sD,2030)
+}

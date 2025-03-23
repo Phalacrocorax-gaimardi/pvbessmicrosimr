@@ -17,3 +17,6 @@ standing charge
 \description{
 household standing charge (expectations & historical)
 }
+\examples{
+standing_charge_fun(sD,2026)
+}

@@ -633,3 +633,6 @@ closeAllConnections()
 tibble::tibble(beta.=beta,lambda.=lambda,p.=p,nu.=nu,rho.=rho,delta.=delta) %>% dplyr::bind_cols(cal) %>% return()
 #observations 2023 60,000 households 208 MW 2024 94,000 households 373 MW
 }
+
+
+#calABM(sD,10,beta=params$beta.,lambda=params$lambda.,p=params$p.,nu=params$nu.,rho=params$rho.,delta=params$delta.)

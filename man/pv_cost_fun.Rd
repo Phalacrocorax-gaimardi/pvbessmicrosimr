@@ -15,5 +15,8 @@ pv_cost_fun(sD, yeartime)
 scalar cost in euros/kWh
 }
 \description{
-solar battery cost in euros/kWh
+solar pv cost in euros/kWp
+}
+\examples{
+pv_cost_fun(sD,2026)
 }

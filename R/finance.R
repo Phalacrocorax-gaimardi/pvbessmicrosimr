@@ -212,30 +212,25 @@ pvbess_imports_fun  <- function(S_1,S_2,aspect,shading_factor_1,shading_factor_2
 #' @export
 #'
 #' @examples
-annualised_system_cost <- function(S,B,params,upgrade=FALSE){
-  #
-  dplyr::if_else(!upgrade,{
-    bess_cost <- dplyr::if_else(B > 0,params$bess_install_cost + B*params$bess_cost,0)
-    pv_cost <- dplyr::if_else(S > 0 ,params$pv_install_cost + S*params$pv_cost,0)
+annualised_system_cost <- function(S, B, params, upgrade = FALSE) {
+  # Common calculations
+  pv_cost <- ifelse(S > 0, S * (params$pv_margin + params$pv_sbos + params$pv_cost + params$pv_labour + params$pv_inverter), 0)
+  bess_cost <- ifelse(B > 0, params$bess_labour_cost + B * params$bess_cost + B * ifelse(S > 0, 0, params$pv_inverter), 0)
 
-    grant <- dplyr::if_else(S == 0 & B == 0,0,seai_grant_fast(params,S,B))
-    #synergy when BESS and PV installed together
-    synergy <- dplyr::if_else((S > 0) & (B > 0),params$pvbess_cost_synergy,0)
-    amort(r=params$delta.,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
-  },{
-    #simple assumption: battery install cost is halved
-    bess_cost <- dplyr::if_else(B > 0,params$bess_install_cost/2 + B*params$bess_cost,0)
-    #pv_install cost is halved
-    pv_cost <- dplyr::if_else(S > 0 ,params$pv_install_cost/2 + S*params$pv_cost,0)
-    #there is no grant
+  if (!upgrade) {
+    # Grant and synergy for non-upgrade case
+    grant <- ifelse(S == 0 & B == 0, 0, seai_grant_fast(params, S, B))
+    synergy <- ifelse((S > 0) & (B > 0), params$pvbess_cost_synergy, 0)
+  } else {
+    # Adjust costs for upgrade case
+    bess_cost <- ifelse(B > 0, B * params$bess_cost + B * ifelse(S > 0, 0, params$pv_inverter), 0)
     grant <- 0
-    #there is no synergy
     synergy <- 0
-    amort(r=params$delta.,term = params$system_lifetime)*(pv_cost+ bess_cost - grant - synergy) %>% return()
-  })
+  }
 
+  # Amortize the total cost
+  amort(r = params$delta., term = params$system_lifetime) * (pv_cost + bess_cost - grant - synergy)
 }
-
 
 #' energy_flows_fast
 #'

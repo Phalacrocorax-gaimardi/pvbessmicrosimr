@@ -12,5 +12,8 @@ resilience_premium_fun(sD, yeartime)
 \item{yeartime}{year fraction}
 }
 \description{
-annual resilience premium for max 1 day of battery storage
+annual resilience premium (willingness-to-pay) for 1 day of battery storage
+}
+\examples{
+resilience_premium_fun(sD,2024)
 }

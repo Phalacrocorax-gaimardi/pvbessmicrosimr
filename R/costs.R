@@ -33,7 +33,7 @@ bess_cost_fun <- function(sD,yeartime){
   return(cost)
 }
 
-#' bess_install_cost_fun
+#' bess_labour_cost_fun
 #'
 #' @param sD scenario dataframe
 #' @param yeartime decimal time
@@ -41,22 +41,16 @@ bess_cost_fun <- function(sD,yeartime){
 #' @return scalar cost in euros
 #' @export
 #'
-#' @examples
-bess_install_cost_fun <- function(sD,yeartime){
+#' @examples bess_labour_cost_fun(sD,2025)
+bess_labour_cost_fun <- function(sD,yeartime){
 
-  cost_2010 <- sD %>% dplyr::filter(parameter=="bess_install_cost_2010") %>% dplyr::pull(value)
-  cost_2015 <- sD %>% dplyr::filter(parameter=="bess_install_cost_2015") %>% dplyr::pull(value)
-  cost_2022 <- sD %>% dplyr::filter(parameter=="bess_install_cost_2022") %>% dplyr::pull(value)
-  cost_2025 <- sD %>% dplyr::filter(parameter=="bess_install_cost_2025") %>% dplyr::pull(value)
-  cost_2030 <- sD %>% dplyr::filter(parameter=="bess_install_cost_2030") %>% dplyr::pull(value)
-  cost_2050 <- sD %>% dplyr::filter(parameter=="bess_install_cost_2050") %>% dplyr::pull(value)
-  cost <- approx(x=c(2010.5,2015.5,2022.5,2025.5,2030.5,2050.5), y=c(cost_2010,cost_2015,cost_2022,cost_2025,cost_2030,cost_2050),xout=yeartime,rule=2)$y
-  return(cost)
+  values <- sD %>% dplyr::filter(parameter==c("bess_labour_cost_2015","bess_labour_cost_2025","bess_labour_cost_2030")) %>% dplyr::pull(value)
+  approx(x=c(2015.5,2025.5,2030.5), y=values,xout=yeartime,rule=2)$y %>% return()
 }
 
 #' pv_cost_fun
 #'
-#' solar battery cost in euros/kWh
+#' solar pv cost in euros/kWp
 #'
 #' @param sD scenario parameters dataframe
 #' @param yeartime decimal time
@@ -64,21 +58,11 @@ bess_install_cost_fun <- function(sD,yeartime){
 #' @return scalar cost in euros/kWh
 #' @export
 #'
-#' @examples
+#' @examples pv_cost_fun(sD,2026)
 pv_cost_fun <- function(sD,yeartime){
 
-  cost_2010 <- sD %>% dplyr::filter(parameter=="pv_cost_2010") %>% dplyr::pull(value)
-  cost_2015 <- sD %>% dplyr::filter(parameter=="pv_cost_2015") %>% dplyr::pull(value)
-  cost_2022 <- sD %>% dplyr::filter(parameter=="pv_cost_2022") %>% dplyr::pull(value)
-  cost_2025 <- sD %>% dplyr::filter(parameter=="pv_cost_2025") %>% dplyr::pull(value)
-  cost_2030 <- sD %>% dplyr::filter(parameter=="pv_cost_2030") %>% dplyr::pull(value)
-  cost_2050 <- sD %>% dplyr::filter(parameter=="pv_cost_2050") %>% dplyr::pull(value)
-  dplyr::if_else(identical(cost_2025,numeric(0)),
-         cost <- approx(x=c(2010.5,2015.5,2022.5,2030.5,2050.5), y=c(cost_2010,cost_2015,cost_2022,cost_2030,cost_2050),xout=yeartime,rule=2)$y,
-         cost <- approx(x=c(2010.5,2015.5,2022.5,2025.5,2030.5,2050.5), y=c(cost_2010,cost_2015,cost_2022,cost_2025,cost_2030,cost_2050),xout=yeartime,rule=2)$y
-  )
-
-  return(cost)
+  values <- sD %>% dplyr::filter(parameter %in% c("pv_cost_2010","pv_cost_2015","pv_cost_2022","pv_cost_2025","pv_cost_2030","pv_cost_2050")) %>% dplyr::pull(value)
+  approx(x=c(2010.5,2015.5,2022.5,2025.5,2030.5,2050.5), y=values,xout=yeartime,rule=2)$y %>% return()
 }
 
 #' pv_install_cost_fun
@@ -112,16 +96,13 @@ pv_install_cost_fun <- function(sD,yeartime){
 #' @return price per kWh in euros
 #' @export
 #'
-#' @examples
+#' @examples evening_tariff_fun(sD,2029)
 evening_tariff_fun <- function(sD,yeartime){
 
   seai_elec1 <- seai_elec %>% dplyr::filter(year >=2008) #add more costs here if known
   #cost_2022 <- sD %>% dplyr::filter(parameter=="electricity_price_2022") %>% dplyr::pull(value)
-  cost_2025 <- sD %>% dplyr::filter(parameter=="evening_tariff_2025") %>% dplyr::pull(value)
-  cost_2030 <- sD %>% dplyr::filter(parameter=="evening_tariff_2030") %>% dplyr::pull(value)
-  cost_2050 <- sD %>% dplyr::filter(parameter=="evening_tariff_2050") %>% dplyr::pull(value)
-  cost <- approx(x=c(seai_elec1$year,2025,2030,2050)+0.5, y=c(seai_elec1$price/100,cost_2025,cost_2030,cost_2050),xout=yeartime,rule=2)$y
-  return(cost)
+  values <- sD %>% dplyr::filter(parameter %in% c("evening_tariff_2025","evening_tariff_2030","evening_tariff_2050")) %>% dplyr::pull(value)
+  approx(x=c(seai_elec1$year,2025,2030,2050)+0.5, y=c(seai_elec1$price/100,values),xout=yeartime,rule=2)$y %>% return()
 }
 
 #' day_tariff_fun
@@ -134,17 +115,13 @@ evening_tariff_fun <- function(sD,yeartime){
 #' @return price per kWh in euros
 #' @export
 #'
-#' @examples
+#' @examples day_tariff_fun(sD,2030)
 day_tariff_fun <- function(sD,yeartime){
 
   seai_elec1 <- seai_elec %>% dplyr::filter(year >=2008) #add more costs here if known
   #cost_2022 <- sD %>% dplyr::filter(parameter=="electricity_price_2022") %>% dplyr::pull(value)
-  cost_2025 <- sD %>% dplyr::filter(parameter=="day_tariff_2025") %>% dplyr::pull(value)
-  cost_2030 <- sD %>% dplyr::filter(parameter=="day_tariff_2030") %>% dplyr::pull(value)
-  cost_2050 <- sD %>% dplyr::filter(parameter=="day_tariff_2050") %>% dplyr::pull(value)
-  cost <- approx(x=c(seai_elec1$year+0.5,2025.5,2030.5,2050.5), y=c(seai_elec1$price/100,cost_2025,cost_2030,cost_2050),xout=yeartime,rule=2)$y
-
-  return(cost)
+  values <- sD %>% dplyr::filter(parameter %in% c("day_tariff_2025","day_tariff_2030","day_tariff_2050")) %>% dplyr::pull(value)
+  approx(x=c(seai_elec1$year+0.5,2025.5,2030.5,2050.5), y=c(seai_elec1$price/100,values),xout=yeartime,rule=2)$y %>% return()
 }
 
 
@@ -162,12 +139,8 @@ day_tariff_fun <- function(sD,yeartime){
 night_tariff_fun <- function(sD,yeartime){
 
   seai_elec1 <- seai_elec %>% dplyr::filter(year >=2008) #add more costs here if known
-  cost_2022 <- sD %>% dplyr::filter(parameter=="night_tariff_2022") %>% dplyr::pull(value)
-  cost_2025 <- sD %>% dplyr::filter(parameter=="night_tariff_2025") %>% dplyr::pull(value)
-  cost_2030 <- sD %>% dplyr::filter(parameter=="night_tariff_2030") %>% dplyr::pull(value)
-  cost_2050 <- sD %>% dplyr::filter(parameter=="night_tariff_2050") %>% dplyr::pull(value)
-  cost <- approx(x=c(seai_elec1$year+0.5,2025.5,2030.5,2050.5), y=c(0.45*seai_elec1$price/100,cost_2025,cost_2030,cost_2050),xout=yeartime,rule=2)$y
-  return(cost)
+  values <- sD %>% dplyr::filter(parameter %in% c("night_tariff_2025","night_tariff_2030","night_tariff_2050")) %>% dplyr::pull(value)
+  approx(x=c(seai_elec1$year+0.5,2025.5,2030.5,2050.5), y=c(0.45*seai_elec1$price/100,values),xout=yeartime,rule=2)$y %>% return()
 }
 
 
@@ -223,17 +196,11 @@ fit_inflation_fun <- function(sD,yeartime){
 #' @return standing charge
 #' @export
 #'
-#' @examples
+#' @examples standing_charge_fun(sD,2026)
 standing_charge_fun <- function(sD,yeartime){
 
-  cost_2015 <- sD %>% dplyr::filter(parameter=="standing_charge_2015") %>% dplyr::pull(value) #add more costs here if known
-  cost_2021 <- sD %>% dplyr::filter(parameter=="standing_charge_2021") %>% dplyr::pull(value)
-
-  cost_2022 <- sD %>% dplyr::filter(parameter=="standing_charge_2022") %>% dplyr::pull(value)
-  cost_2030 <- sD %>% dplyr::filter(parameter=="standing_charge_2030") %>% dplyr::pull(value)
-  cost_2050 <- sD %>% dplyr::filter(parameter=="standing_charge_2050") %>% dplyr::pull(value)
-  cost <- approx(x=c(2015.5,2021.5,2022.5,2030.5,2050.5), y=c(cost_2015,cost_2021,cost_2022,cost_2030,cost_2050),xout=yeartime,rule=2)$y
-  return(cost)
+  values <- sD %>% dplyr::filter(parameter %in% c("standing_charge_2015","standing_charge_2021","standing_charge_2022","standing_charge_2030","standing_charge_2050")) %>% dplyr::pull(value) #add more costs here if known
+  approx(x=c(2015.5,2021.5,2022.5,2030.5,2050.5), y=values,xout=yeartime,rule=2)$y %>% return()
 
 
 }
@@ -278,12 +245,8 @@ finance_rate_fun <- function(sD,yeartime){
 #' @examples
 fit_fun <- function(sD,yeartime){
 
-  fit_2022 <- sD %>% dplyr::filter(parameter=="fit_2022") %>% dplyr::pull(value)
-  fit_2025 <- sD %>% dplyr::filter(parameter=="fit_2025") %>% dplyr::pull(value)
-  fit_2030 <- sD %>% dplyr::filter(parameter=="fit_2030") %>% dplyr::pull(value)
-  fit_2050 <- sD %>% dplyr::filter(parameter=="fit_2050") %>% dplyr::pull(value)
-  fit <- approx(x=c(2022.5,2025.5,2030.5,2050.5), y=c(fit_2022,fit_2025,fit_2030,fit_2050),xout=yeartime,rule=2,yleft=0)$y
-  return(fit)
+  values <- sD %>% dplyr::filter(parameter %in% c("fit_2022","fit_2025","fit_2030","fit_2050")) %>% dplyr::pull(value)
+  approx(x=c(2022.5,2025.5,2030.5,2050.5), y=values,xout=yeartime,rule=2,yleft=0)$y %>% return()
 }
 
 
@@ -300,17 +263,14 @@ fit_fun <- function(sD,yeartime){
 #' @examples
 fit_tax_threshold_fun <- function(sD,yeartime){
 
-  thres_2022 <- sD %>% dplyr::filter(parameter=="ceg_tax_threshold_2022") %>% dplyr::pull(value)
-  thres_2030 <- sD %>% dplyr::filter(parameter=="ceg_tax_threshold_2030") %>% dplyr::pull(value)
-  thres_2050 <- sD %>% dplyr::filter(parameter=="ceg_tax_threshold_2050") %>% dplyr::pull(value)
-  thres <- approx(x=c(2022.5,2030.5,2050.5), y=c(thres_2022,thres_2030,thres_2050),xout=yeartime,rule=2)$y
-  return(thres)
+  values <- sD %>% dplyr::filter(parameter %in% c("fit_tax_threshold_2022","fit_tax_threshold_2030","fit_tax_threshold_2050")) %>% dplyr::pull(value)
+  approx(x=c(2022.5,2030.5,2050.5), y=values,xout=yeartime,rule=2)$y %>% return()
 }
 
 
 #' resilience_premium_fun
 #'
-#' annual resilience premium for max 1 day of battery storage
+#' annual resilience premium (willingness-to-pay) for 1 day of battery storage
 #'
 #' @param sD scenario
 #' @param yeartime year fraction
@@ -318,14 +278,11 @@ fit_tax_threshold_fun <- function(sD,yeartime){
 #' @returns
 #' @export
 #'
-#' @examples
+#' @examples resilience_premium_fun(sD,2024)
 resilience_premium_fun <- function(sD,yeartime){
 
-  prem_2025 <- sD %>% dplyr::filter(parameter=="resilience_premium_2025") %>% dplyr::pull(value)
-  prem_2030 <- sD %>% dplyr::filter(parameter=="resilience_premium_2030") %>% dplyr::pull(value)
-  prem_2050 <- sD %>% dplyr::filter(parameter=="resilience_premium_2050") %>% dplyr::pull(value)
-  prem <- approx(x=c(2025.5,2030.5,2050.5), y=c(prem_2025,prem_2030,prem_2050),xout=yeartime,rule=2)$y
-  return(prem)
+  values <- sD %>% dplyr::filter(parameter %in% c("resilience_premium_2025","resilience_premium_2030")) %>% dplyr::pull(value)
+  approx(x=c(2025.5,2030.5), y=values,xout=yeartime,rule=2)$y %>% return()
 }
 
 
@@ -471,12 +428,8 @@ pv_system_efficiency <- function(sD,yeartime){
 #' @examples
 kWp_per_m2_fun <- function(sD,yeartime){
 
-  value_2015 <- sD %>% dplyr::filter(parameter=="kWp_per_m2_2015") %>% dplyr::pull(value)
-  value_2023 <- sD %>% dplyr::filter(parameter=="kWp_per_m2_2023") %>% dplyr::pull(value)
-  value_2030 <- sD %>% dplyr::filter(parameter=="kWp_per_m2_2030") %>% dplyr::pull(value)
-  value_2050 <- sD %>% dplyr::filter(parameter=="kWp_per_m2_2050") %>% dplyr::pull(value)
-  value <- approx(x=c(2015.5,2023.5,2030.5,2050.5), y=c(value_2015,value_2023,value_2030,value_2050),xout=yeartime,rule=2)$y
-  return(value)
+  values <- sD %>% dplyr::filter(parameter %in% c("kWp_per_m2_2015","kWp_per_m2_2023","kWp_per_m2_2030","kWp_per_m2_2050")) %>% dplyr::pull(value)
+  approx(x=c(2015.5,2023.5,2030.5,2050.5), y=values,xout=yeartime,rule=2)$y %>% return()
 }
 
 
@@ -587,3 +540,25 @@ get_demand_params <- function(highest_kwh,lowest_kwh,lag_D = 30){
   }
 
 #get_demand_params_from_survey <- Vectorize(get_demand_params_from_survey, c(lowest_kwh,highest_kwh))
+
+pv_labour_cost_fun <- function(sD, yeartime) {
+  # Filter once and extract values
+  costs <- sD %>% dplyr::filter(parameter %in% c("pv_labour_2015", "pv_labour_2025", "pv_labour_2030")) %>% dplyr::pull(value)
+
+  # Perform interpolation
+  approx(x = c(2015.5, 2025.5, 2030.5),
+         y = costs,
+         xout = yeartime,
+         rule = 2)$y
+}
+
+pv_inverter_cost_fun <- function(sD, yeartime) {
+  # Filter once and extract values
+  costs <- sD %>% dplyr::filter(parameter %in% c("pv_inverter_2015", "pv_inverter_2025", "pv_inverter_2030")) %>% dplyr::pull(value)
+
+  # Perform interpolation
+  approx(x = c(2015.5, 2025.5, 2030.5),
+         y = costs,
+         xout = yeartime,
+         rule = 2)$y
+}
