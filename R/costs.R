@@ -44,7 +44,7 @@ bess_cost_fun <- function(sD,yeartime){
 #' @examples bess_labour_cost_fun(sD,2025)
 bess_labour_cost_fun <- function(sD,yeartime){
 
-  values <- sD %>% dplyr::filter(parameter==c("bess_labour_cost_2015","bess_labour_cost_2025","bess_labour_cost_2030")) %>% dplyr::pull(value)
+  values <- sD %>% dplyr::filter(parameter %in% c("bess_labour_cost_2015","bess_labour_cost_2025","bess_labour_cost_2030")) %>% dplyr::pull(value)
   approx(x=c(2015.5,2025.5,2030.5), y=values,xout=yeartime,rule=2)$y %>% return()
 }
 
