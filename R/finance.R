@@ -213,14 +213,18 @@ pvbess_imports_fun  <- function(S_1,S_2,aspect,shading_factor_1,shading_factor_2
 #'
 #' @examples
 annualised_system_cost <- function(S, B, params, upgrade = FALSE) {
-  # Common calculations
-  pv_cost <- ifelse(S > 0, S * (params$pv_margin + params$pv_sbos + params$pv_cost + params$pv_labour + params$pv_inverter), 0)
-  bess_cost <- ifelse(B > 0, params$bess_labour_cost + B * params$bess_cost + B * ifelse(S > 0, 0, params$pv_inverter), 0)
+
+  #
+  pv_cost <- ifelse(S > 0, S * (params$pv_margin + params$pv_sbos + params$pv_cost + params$pv_labour), 0)
+  bess_cost <- ifelse(B > 0, params$bess_labour_cost + B * params$bess_cost, 0)
+  #invert sized by S or 0.5*B whichever is bigger. This assumes a C-rate for Li-ion batteries of 0.5
+  inverter_cost <- pmax(S,0.5*B)*params$pv_inverter
+  overhead_cost <- ifelse(S > 0 | B > 0, params$overhead,0)
 
   if (!upgrade) {
     # Grant and synergy for non-upgrade case
     grant <- ifelse(S == 0 & B == 0, 0, seai_grant_fast(params, S, B))
-    synergy <- ifelse((S > 0) & (B > 0), params$pvbess_cost_synergy, 0)
+    synergy <- ifelse((S > 0) & (B > 0), params$pvbess_cost_synergy, 0) #probably set to zero
   } else {
     # Adjust costs for upgrade case
     bess_cost <- ifelse(B > 0, B * params$bess_cost + B * ifelse(S > 0, 0, params$pv_inverter), 0)
@@ -229,7 +233,7 @@ annualised_system_cost <- function(S, B, params, upgrade = FALSE) {
   }
 
   # Amortize the total cost
-  amort(r = params$delta., term = params$system_lifetime) * (pv_cost + bess_cost - grant - synergy)
+  amort(r = params$delta., term = params$system_lifetime) * (pv_cost + bess_cost + inverter_cost + overhead_cost - grant - synergy)
 }
 
 #' energy_flows_fast

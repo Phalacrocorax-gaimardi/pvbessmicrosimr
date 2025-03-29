@@ -27,6 +27,7 @@ scenario_params <- function(sD,yeartime){
   scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="pv_inverter", value=  pv_inverter_cost_fun(sD,yeartime)))
  # scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="pv_install_cost", value=  pv_install_cost_fun(sD,yeartime)))
   scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="pvbess_cost_synergy",  value=dplyr::filter(sD, parameter=="pvbess_cost_synergy")$value))
+  scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="overhead",  value=dplyr::filter(sD, parameter=="overhead")$value))
   scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="day_tariff", value =  day_tariff_fun(sD,yeartime)))
   scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="evening_tariff", value =  evening_tariff_fun(sD,yeartime)))
   scen <- dplyr::bind_rows(scen,tibble::tibble(parameter="night_tariff", value =  night_tariff_fun(sD,yeartime)))
