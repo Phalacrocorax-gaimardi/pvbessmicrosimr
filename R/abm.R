@@ -71,11 +71,12 @@ initialise_agents <- function(sD,yeartime,cal_run){
 #' @param social_network artifical social network
 #' @param ignore_social option to ignore social effects. Default is FALSE.
 #' @param cal_run microcalibration run index between 1 and 100
+#' @param quiet TRUE to suppress messages
 #'
 #' @return updated agent dataframe
 #' @export
 #' @examples
-update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,cal_run){
+update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,cal_run, quiet=TRUE){
 
   #
   #beta. <- 0.2532785
@@ -136,7 +137,7 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
   b_s <- b_s %>% dplyr::mutate(dS_2 = dplyr::if_else(transaction, dS_2, 0))
   b_s <- b_s %>% dplyr::mutate(dB = dplyr::if_else(transaction, dB, 0))
   #update areas for agents who transacted
-  if(dim(b_s %>% dplyr::filter(transaction))[1] == 0) {
+  if(dim(b_s %>% dplyr::filter(transaction))[1] == 0 & !quiet) {
     print(paste("time", round(yeartime,1), "no PV-BESS adopters"))
     #print(paste("PV system augmenters because selected roofs already at capacity"))
   }
@@ -162,8 +163,10 @@ update_agents <- function(sD,yeartime,agents_in, social_network,ignore_social=F,
     a_s <- a_s %>% dplyr::rowwise() %>% dplyr::mutate(q45 = min(q45+1,4)) #qsp21 encoding 1,2,3
     #agents_out <- a_s
     #a_s <- a_s %>% dplyr::select(-du_tot)
-    print(paste("time", round(yeartime,1), "PV system adopters",dim(a_s %>% dplyr::filter( (S1_new > 0 & S1_old==0) | (S2_new > 0 & S2_old==0)))[1]))
-    print(paste("PV system augmentors",dim(a_s %>% dplyr::filter((S1_old > 0 & S1_new > S1_old) | (S2_old > 0 & S2_new > S2_old) | (S1_old > 0 & B_new > B_old) || (S2_old > 0 & B_new > B_old) ))[1]))
+    if(!quiet) {
+      print(paste("time", round(yeartime,1), "PV system adopters",dim(a_s %>% dplyr::filter( (S1_new > 0 & S1_old==0) | (S2_new > 0 & S2_old==0)))[1]))
+      print(paste("PV system augmentors",dim(a_s %>% dplyr::filter((S1_old > 0 & S1_new > S1_old) | (S2_old > 0 & S2_new > S2_old) | (S1_old > 0 & B_new > B_old) || (S2_old > 0 & B_new > B_old) ))[1]))
+    }
     return(dplyr::ungroup(a_s))
 }
 
@@ -217,6 +220,7 @@ get_financial_utility_scale <- function(agents_in,cal_run){
 #' @param n_unused_cores number of cores left unused in parallel/foreach. Recommended values 2 or 1.
 #' @param use_parallel if TRUE uses multiple cores. Use FALSE for diagnostic runs
 #' @param ignore_social if TRUE ignore social network effects. Default is FALSE
+#' @param quiet if TRUE reduce messaging
 #'
 #' @return a three component list - simulation output, scenario setup, meta-parameters
 #' @export
@@ -224,7 +228,7 @@ get_financial_utility_scale <- function(agents_in,cal_run){
 #' @importFrom lubridate %m+%
 #' @importFrom foreach %dopar%
 #'
-runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_cores=2, use_parallel=T,ignore_social=F){
+runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_cores=2, use_parallel=T,ignore_social=F, quiet=TRUE){
   #
   year_zero <- 2015
   #calibration params:: MOVED TO SYSTDATA WHEN CALIBRATION COMPLETE
@@ -277,7 +281,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
       for(t in seq(2,Nt)){
         #bi-monthly
         yeartime <- year_zero+(t-1)/6
-        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run) #static social network, everything else static
+        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run,quiet) #static social network, everything else static
       }
 
       for(t in 1:Nt) agent_ts[[t]]$t <- t
@@ -330,7 +334,7 @@ runABM <- function(sD, Nrun=1,simulation_end=2030,resample_society=F,n_unused_co
         #
         #yeartime <- year_zero+(t-1)
         yeartime <- year_zero+(t-1)/6
-        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run) #static social network, everything else static
+        agent_ts[[t]] <- update_agents(sD,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run,quiet) #static social network, everything else static
         #agent_ts[[t]] <- tibble::tibble(t=t)
       }
 
@@ -434,7 +438,7 @@ calABM <- function(sD, Nrun=4,n_unused_cores=2, use_parallel=T, beta,lambda,p,nu
       for(t in seq(2,Nt)){
         #bi-monthly
         yeartime <- year_zero+(t-1)/6
-        agent_ts[[t]] <- update_agents(sD_cal,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run) #static social network, everything else static
+        agent_ts[[t]] <- update_agents(sD_cal,yeartime,agent_ts[[t-1]],social_network=social,ignore_social,cal_run=microcal_run,quiet) #static social network, everything else static
         #agent_ts[[t]] <- tibble::tibble(t=t)
         }
 

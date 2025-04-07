@@ -11,7 +11,8 @@ runABM(
   resample_society = F,
   n_unused_cores = 2,
   use_parallel = T,
-  ignore_social = F
+  ignore_social = F,
+  quiet = TRUE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ runABM(
 \item{use_parallel}{if TRUE uses multiple cores. Use FALSE for diagnostic runs}
 
 \item{ignore_social}{if TRUE ignore social network effects. Default is FALSE}
+
+\item{quiet}{if TRUE reduce messaging}
 }
 \value{
 a three component list - simulation output, scenario setup, meta-parameters

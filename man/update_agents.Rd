@@ -10,7 +10,8 @@ update_agents(
   agents_in,
   social_network,
   ignore_social = F,
-  cal_run
+  cal_run,
+  quiet = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ update_agents(
 \item{ignore_social}{option to ignore social effects. Default is FALSE.}
 
 \item{cal_run}{microcalibration run index between 1 and 100}
+
+\item{quiet}{TRUE to suppress messages}
 }
 \value{
 updated agent dataframe
