@@ -199,8 +199,8 @@ fit_inflation_fun <- function(sD,yeartime){
 #' @examples standing_charge_fun(sD,2026)
 standing_charge_fun <- function(sD,yeartime){
 
-  values <- sD %>% dplyr::filter(parameter %in% c("standing_charge_2015","standing_charge_2021","standing_charge_2022","standing_charge_2030","standing_charge_2050")) %>% dplyr::pull(value) #add more costs here if known
-  approx(x=c(2015.5,2021.5,2022.5,2030.5,2050.5), y=values,xout=yeartime,rule=2)$y %>% return()
+  values <- sD %>% dplyr::filter(parameter %in% c("standing_charge_2015","standing_charge_2022","standing_charge_2025","standing_charge_2030","standing_charge_2050")) %>% dplyr::pull(value) #add more costs here if known
+  approx(x=c(2015.5,2022.5,2025.5,2030.5,2050.5), y=values,xout=yeartime,rule=2)$y %>% return()
 
 
 }
@@ -252,7 +252,7 @@ fit_fun <- function(sD,yeartime){
 
 #' fit_tax_threshold_fun
 #'
-#' MSS threshold in euros before tax is liable (tax disregard)
+#' FiT tax threshold in euros before tax is liable (tax disregard)
 #'
 #' @param sD scenario dataframe
 #' @param yeartime decimal time
@@ -263,8 +263,8 @@ fit_fun <- function(sD,yeartime){
 #' @examples
 fit_tax_threshold_fun <- function(sD,yeartime){
 
-  values <- sD %>% dplyr::filter(parameter %in% c("fit_tax_threshold_2022","fit_tax_threshold_2030","fit_tax_threshold_2050")) %>% dplyr::pull(value)
-  approx(x=c(2022.5,2030.5,2050.5), y=values,xout=yeartime,rule=2)$y %>% return()
+  values <- sD %>% dplyr::filter(parameter %in% c("fit_tax_threshold_2025","fit_tax_threshold_2030","fit_tax_threshold_2050")) %>% dplyr::pull(value)
+  approx(x=c(2025.5,2030.5,2050.5), y=values,xout=yeartime,rule=2)$y %>% return()
 }
 
 

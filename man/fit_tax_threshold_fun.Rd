@@ -12,5 +12,5 @@ fit_tax_threshold_fun(sD, yeartime)
 \item{yeartime}{decimal time}
 }
 \description{
-MSS threshold in euros before tax is liable (tax disregard)
+FiT tax threshold in euros before tax is liable (tax disregard)
 }

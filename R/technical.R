@@ -1,5 +1,5 @@
 
-#sD <- readxl::read_xlsx("~/Policy/CAMG/SolarPVReport/PVBESS_microsimr/scenario_parameters.xlsx", sheet="scenario_BASE")
+#sD <- readxl::read_xlsx("~/Policy/CAMG/SolarPVReport/PVBESS_microsimr/scenario_parameters.xlsx", sheet="scenario_BASE_2")
 #seai_elec <- read_csv("~/Policy/CAMG/SolarPVReport/PVBESS_microsimr/electricity_household_demand_price_SEAI.csv")
 #solar_potentials <- read_csv("~/Policy/CAMG/SolarPVReport/PVBESS_microsimr/solar_potentials_30degreepitch_pvwatts.csv")
 
